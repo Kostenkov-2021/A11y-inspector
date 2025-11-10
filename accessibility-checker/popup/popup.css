@@ -1,0 +1,85 @@
+body {
+  width: 400px;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.container {
+  padding: 16px;
+}
+
+.input-group {
+  margin-bottom: 12px;
+}
+
+label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+input, select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.primary-btn {
+  width: 100%;
+  padding: 10px;
+  background-color: #4285f4;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.primary-btn:hover {
+  background-color: #3367d6;
+}
+
+.secondary-btn {
+  width: 100%;
+  padding: 8px;
+  background-color: #f1f1f1;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+.status {
+  margin-top: 12px;
+  padding: 8px;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.results {
+  margin-top: 16px;
+}
+
+.hidden {
+  display: none;
+}
+
+.error {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+.success {
+  background-color: #e8f5e8;
+  color: #2e7d32;
+}
+
+.issue-item {
+  padding: 8px;
+  margin: 4px 0;
+  border-left: 3px solid #ff9800;
+  background-color: #fff3e0;
+}

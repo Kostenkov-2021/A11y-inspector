@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <h2>Проверка доступности</h2>
+    
+    <div class="input-group">
+      <label for="url-input">URL сайта:</label>
+      <input type="url" id="url-input" placeholder="https://example.com">
+    </div>
+    
+    <div class="input-group">
+      <label for="format-select">Формат отчёта:</label>
+      <select id="format-select">
+        <option value="json">JSON</option>
+        <option value="html">HTML</option>
+        <option value="csv">CSV</option>
+        <option value="markdown">Markdown</option>
+      </select>
+    </div>
+    
+    <button id="check-btn" class="primary-btn">Проверить</button>
+    
+    <div id="status" class="status"></div>
+    
+    <div id="results" class="results hidden">
+      <h3>Результаты проверки</h3>
+      <div id="report-content"></div>
+      <button id="download-btn" class="secondary-btn">Скачать отчёт</button>
+    </div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>

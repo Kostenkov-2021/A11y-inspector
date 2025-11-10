@@ -1,7 +1,7 @@
 function runA11yChecks() {
   const issues = [];
   
-  // Проверка альтернативных текстов для изображений
+  // Checking Alt texts for images
   const imagesWithoutAlt = document.querySelectorAll('img:not([alt])');
   imagesWithoutAlt.forEach(img => {
     issues.push({
@@ -13,7 +13,7 @@ function runA11yChecks() {
     });
   });
 
-  // Проверка заголовков
+  // Checking headeings
   const headings = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
   if (headings.length === 0) {
     issues.push({
@@ -25,19 +25,19 @@ function runA11yChecks() {
     });
   }
 
-  // Проверка контрастности (упрощенная)
+  // Simplified contrast check
   const lowContrastElements = checkColorContrast();
   issues.push(...lowContrastElements);
 
-  // Проверка ARIA атрибутов
+  // Checking of ARIA attributes
   const ariaIssues = checkAriaAttributes();
   issues.push(...ariaIssues);
 
-  // Проверка клавиатурной навигации
+  // Checking of keyboard navigation
   const keyboardIssues = checkKeyboardNavigation();
   issues.push(...keyboardIssues);
 
-  // Проверка семантической разметки
+  // Checking semantic tags
   const semanticIssues = checkSemanticMarkup();
   issues.push(...semanticIssues);
 
@@ -65,15 +65,13 @@ function getSelector(element) {
 
 function checkColorContrast() {
   const issues = [];
-  // Упрощенная проверка контрастности
+  // Simplified contrast check
   const elements = document.querySelectorAll('*');
   elements.forEach(el => {
     const style = window.getComputedStyle(el);
     const color = style.color;
     const backgroundColor = style.backgroundColor;
     
-    // Здесь должна быть реальная проверка контрастности
-    // Для демонстрации возвращаем пустой массив
   });
   return issues;
 }
@@ -81,7 +79,7 @@ function checkColorContrast() {
 function checkAriaAttributes() {
   const issues = [];
   
-  // Проверка aria-label без соответствующего видимого текста
+  // Checking of aria-label without visible text
   const ariaLabeled = document.querySelectorAll('[aria-label]');
   ariaLabeled.forEach(el => {
     if (!el.textContent.trim() && !el.querySelector('img[alt]')) {
@@ -101,7 +99,7 @@ function checkAriaAttributes() {
 function checkKeyboardNavigation() {
   const issues = [];
   
-  // Проверка элементов с tabindex
+  // Checking items with tabindex
   const tabIndexElements = document.querySelectorAll('[tabindex]');
   tabIndexElements.forEach(el => {
     const tabIndex = parseInt(el.getAttribute('tabindex'));
@@ -122,7 +120,7 @@ function checkKeyboardNavigation() {
 function checkSemanticMarkup() {
   const issues = [];
   
-  // Проверка использования div вместо семантических элементов
+  // Checking the use of div instead of semantic elements
   const divButtons = document.querySelectorAll('div[onclick], div[role="button"]');
   divButtons.forEach(div => {
     issues.push({

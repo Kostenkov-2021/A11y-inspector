@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const resultsDiv = document.getElementById('results');
   const reportContent = document.getElementById('report-content');
 
-  // Проверка текущей вкладки
+  // Checking the current tab
   chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
     if (tabs[0] && tabs[0].url) {
       urlInput.value = tabs[0].url;

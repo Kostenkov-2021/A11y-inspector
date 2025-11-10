@@ -1,5 +1,5 @@
 const A11yRules = {
-  // Правила для проверки изображений
+  // Rules for checking images
   images: {
     missingAlt: {
       check: (img) => !img.hasAttribute('alt'),
@@ -13,7 +13,7 @@ const A11yRules = {
     }
   },
 
-  // Правила для форм
+  // Rules for forms
   forms: {
     missingLabel: {
       check: (input) => {
@@ -26,7 +26,7 @@ const A11yRules = {
     }
   },
 
-  // Правила для навигации
+  // Rules for navigation
   navigation: {
     missingSkipLinks: {
       check: () => {

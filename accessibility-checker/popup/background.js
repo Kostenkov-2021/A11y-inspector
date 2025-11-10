@@ -9,10 +9,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 async function handleAccessibilityCheck(url, format) {
   try {
-    // Открываем новую вкладку для проверки
+    // Opening a new checking tab
     const tab = await chrome.tabs.create({ url, active: false });
     
-    // Ждем загрузки страницы
+    // Waiting for the page to load
     await new Promise((resolve) => {
       chrome.tabs.onUpdated.addListener(function listener(tabId, info) {
         if (tabId === tab.id && info.status === 'complete') {
@@ -22,16 +22,16 @@ async function handleAccessibilityCheck(url, format) {
       });
     });
 
-    // Внедряем скрипт проверки доступности
+    // Implementing the accessibility check script
     const results = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
       function: runA11yChecks
     });
 
-    // Закрываем вкладку
+    // Closing the tab
     await chrome.tabs.remove(tab.id);
 
-    // Генерируем отчет
+    // Generating a report
     const report = generateReport(results[0].result, format);
     return { report };
 

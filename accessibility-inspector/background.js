@@ -40,7 +40,7 @@ async function handleAccessibilityCheck(url, format) {
   }
 }
 
-function generateReport(a11yData, format) {
+function generateReport(data, format) {
   const generator = new ReportGenerator();
-  return generator.generate(a11yData, format);
+  return generator.generate(data, format);
 }

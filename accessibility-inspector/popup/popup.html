@@ -1,20 +1,20 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Accessibility Check</title>
+  <title>Проверка доступности</title>
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
   <div class="container">
     <header role="banner">
-      <h1>Accessibility Inspector</h1>
+      <h1>Инспектор доступности</h1>
     </header>
     
     <main role="main">
       <div class="input-group">
-        <label for="url-input" class="required">Website URL:</label>
+        <label for="url-input" class="required">URL-адрес сайта:</label>
         <input 
           type="url" 
           id="url-input" 
@@ -23,25 +23,25 @@
           aria-describedby="url-help"
         >
         <div id="url-help" class="help-text">
-          Enter full website URL for accessibility checking
+          Введите полный URL-адрес сайта для проверки доступности
         </div>
       </div>
       
       <div class="input-group">
-        <label for="format-select">Report Format:</label>
+        <label for="format-select">Формат отчета:</label>
         <select id="format-select" aria-describedby="format-help">
           <option value="json">JSON</option>
           <option value="html">HTML</option>
-          <option value="text">Text</option>
+          <option value="text">Текст</option>
         </select>
         <div id="format-help" class="help-text">
-          Choose format for downloading the report
+          Выберите формат загрузки отчета
         </div>
       </div>
       
       <div class="button-group">
         <button id="check-btn" class="primary-btn" aria-live="polite">
-          <span class="button-text">Check Accessibility</span>
+          <span class="button-text">Проверить доступность</span>
           <span class="loading-spinner hidden" aria-hidden="true"></span>
         </button>
         
@@ -58,16 +58,16 @@
       </div>
       
       <section id="results" class="results hidden" aria-labelledby="results-heading">
-        <h2 id="results-heading">Check Results</h2>
+        <h2 id="results-heading">Результаты проверки</h2>
         
         <div class="summary-stats" id="summary-stats"></div>
         
         <div class="report-actions">
           <button id="download-btn" class="secondary-btn">
-            📥 Download Report
+            Скачать отчет
           </button>
           <button id="copy-btn" class="secondary-btn">
-            📋 Copy to Clipboard
+            Скопировать в буфер обмена
           </button>
         </div>
         
@@ -76,7 +76,7 @@
     </main>
     
     <footer role="contentinfo" class="footer">
-      <p>Accessibility Inspector v1.0</p>
+      <p>Инспектор доступности v1.0</p>
     </footer>
   </div>
   

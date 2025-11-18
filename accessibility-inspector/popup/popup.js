@@ -86,13 +86,13 @@ document.addEventListener('DOMContentLoaded', function() {
           urlInput.value = tab.url;
           startCheck();
         } else {
-          showStatus('Cannot check non-web pages (chrome://, file://, etc.)', 'error');
+          showStatus('Невозможно проверить другие веб-страницы (chrome://, file://, etc.)', 'error');
         }
       } else {
-        showStatus('Could not get current page URL', 'error');
+        showStatus('Не удалось получить URL текущей страницы', 'error');
       }
     } catch (error) {
-      showStatus(`Error: ${error.message}`, 'error');
+      showStatus(`Ошибка: ${error.message}`, 'error');
     }
   }
 
@@ -105,13 +105,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Validate URL
     if (!url) {
-      showStatus('Please enter a URL to check', 'error');
+      showStatus('Пожалуйста, введите URL-адрес для проверки', 'error');
       urlInput.focus();
       return;
     }
 
     if (!isValidUrl(url)) {
-      showStatus('Please enter a valid URL (http:// or https://)', 'error');
+      showStatus('Пожалуйста, введите действительный URL-адрес (http:// or https://)', 'error');
       urlInput.focus();
       return;
     }
@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Show loading state
     setLoadingState(true);
-    showStatus('Checking accessibility...', 'loading');
+    showStatus('Идёт проверка доступности...', 'загрузка');
 
     // Hide previous results
     hideResults();
@@ -175,13 +175,13 @@ document.addEventListener('DOMContentLoaded', function() {
         
         currentReport = reportData;
         displayResults(currentReport);
-        showStatus('Check completed successfully!', 'success');
+        showStatus('Проверка успешно завершена!', 'success');
       } catch (error) {
-        console.error('Error processing report:', error);
-        showStatus(`Error processing results: ${error.message}`, 'error');
+        console.error('Ошибка обработки отчёта:', error);
+        showStatus(`Ошибка обработки результатов: ${error.message}`, 'error');
       }
     } else {
-      showStatus('Unknown error during check - no data received', 'error');
+      showStatus('Неизвестная ошибка при проверке - данные не получены', 'error');
     }
   }
 
@@ -284,8 +284,176 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
-  // ... остальные функции popup.js остаются без изменений ...
-  // [Вставьте сюда formatAsJson, formatAsHtml, formatAsText, downloadReport, copyReportToClipboard и другие функции]
+  function formatAsJson(reportData) {
+    return `<pre>${JSON.stringify(reportData, null, 2)}</pre>`;
+  }
+
+  function formatAsHtml(reportData) {
+    let report;
+    
+    if (typeof reportData === 'string') {
+      try {
+        report = JSON.parse(reportData);
+      } catch (e) {
+        return `<p>Ошибка парсинга JSON: ${e.message}</p>`;
+      }
+    } else {
+      report = reportData;
+    }
+
+    const issues = report.issues || [];
+    
+    let html = `
+      <div class="report-header">
+        <h4>Отчет доступности</h4>
+        <p><strong>URL:</strong> ${report.url || 'Неизвестно'}</p>
+        <p><strong>Время проверки:</strong> ${report.timestamp || 'Неизвестно'}</p>
+      </div>
+    `;
+
+    if (issues.length === 0) {
+      html += '<p class="no-issues">Проблемы доступности не найдены! ✅</p>';
+    } else {
+      html += '<div class="issues-list">';
+      
+      issues.forEach((issue, index) => {
+        const typeClass = issue.type === 'error' ? 'error' : 'warning';
+        html += `
+          <div class="issue-item ${typeClass}">
+            <div class="issue-header">
+              <span class="issue-type">${typeClass === 'error' ? '❌ Ошибка' : '⚠️ Предупреждение'}</span>
+              <span class="issue-category">${issue.category || 'unknown'}</span>
+            </div>
+            <div class="issue-message">${issue.message || 'Нет описания'}</div>
+            ${issue.selector ? `<div class="issue-selector"><strong>Селектор:</strong> ${issue.selector}</div>` : ''}
+            ${issue.details ? `<div class="issue-details"><pre>${JSON.stringify(issue.details, null, 2)}</pre></div>` : ''}
+          </div>
+        `;
+      });
+      
+      html += '</div>';
+    }
+    
+    return html;
+  }
+
+  function formatAsText(reportData) {
+    let report;
+    
+    if (typeof reportData === 'string') {
+      try {
+        report = JSON.parse(reportData);
+      } catch (e) {
+        return `Ошибка парсинга JSON: ${e.message}`;
+      }
+    } else {
+      report = reportData;
+    }
+
+    const issues = report.issues || [];
+    let text = `Отчет доступности\n`;
+    text += `URL: ${report.url || 'Неизвестно'}\n`;
+    text += `Время проверки: ${report.timestamp || 'Неизвестно'}\n\n`;
+
+    if (issues.length === 0) {
+      text += 'Проблемы доступности не найдены! ✅\n';
+    } else {
+      text += `Найдено проблем: ${issues.length}\n\n`;
+      
+      issues.forEach((issue, index) => {
+        const typeLabel = issue.type === 'error' ? 'ОШИБКА' : 'ПРЕДУПРЕЖДЕНИЕ';
+        text += `${index + 1}. [${typeLabel}] ${issue.category || 'unknown'}\n`;
+        text += `   Сообщение: ${issue.message || 'Нет описания'}\n`;
+        if (issue.selector) {
+          text += `   Селектор: ${issue.selector}\n`;
+        }
+        text += '\n';
+      });
+    }
+    
+    return `<pre>${text}</pre>`;
+  }
+
+  function downloadReport() {
+    if (!currentReport) {
+      showStatus('Нет данных для скачивания', 'error');
+      return;
+    }
+
+    try {
+      const format = formatSelect.value;
+      let content, mimeType, extension;
+
+      switch (format) {
+        case 'html':
+          content = formatAsHtml(currentReport);
+          mimeType = 'text/html';
+          extension = 'html';
+          break;
+        case 'text':
+          content = typeof currentReport === 'string' ? currentReport : formatAsText(currentReport);
+          mimeType = 'text/plain';
+          extension = 'txt';
+          break;
+        case 'json':
+        default:
+          content = typeof currentReport === 'string' ? currentReport : JSON.stringify(currentReport, null, 2);
+          mimeType = 'application/json';
+          extension = 'json';
+          break;
+      }
+
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const filename = `accessibility-report-${new Date().toISOString().slice(0, 10)}.${extension}`;
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      showStatus('Отчет скачан успешно', 'success');
+    } catch (error) {
+      showStatus(`Ошибка скачивания: ${error.message}`, 'error');
+    }
+  }
+
+  async function copyReportToClipboard() {
+    if (!currentReport) {
+      showStatus('Нет данных для копирования', 'error');
+      return;
+    }
+
+    try {
+      const format = formatSelect.value;
+      let content;
+
+      switch (format) {
+        case 'html':
+          content = formatAsText(currentReport).replace(/<[^>]*>/g, '');
+          break;
+        case 'text':
+          content = typeof currentReport === 'string' ? 
+            currentReport.replace(/<[^>]*>/g, '') : 
+            formatAsText(currentReport).replace(/<[^>]*>/g, '');
+          break;
+        case 'json':
+        default:
+          content = typeof currentReport === 'string' ? 
+            currentReport : 
+            JSON.stringify(currentReport, null, 2);
+          break;
+      }
+
+      await navigator.clipboard.writeText(content);
+      showStatus('Отчет скопирован в буфер обмена', 'success');
+    } catch (error) {
+      showStatus(`Ошибка копирования: ${error.message}`, 'error');
+    }
+  }
 
   /**
    * Set loading state for check button

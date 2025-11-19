@@ -24,16 +24,23 @@ class ColorUtils {
     } : { r: 0, g: 0, b: 0 };
   }
 
-  /**
-   * Convert RGB to HEX
-   * @param {number} r - Red value
-   * @param {number} g - Green value
-   * @param {number} b - Blue value
-   * @returns {string} HEX color code
-   */
-  static rgbToHex(r, g, b) {
-    return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
-  }
+/**
+ * Convert RGB to HEX
+ * @param {number} r - Red value (0-255)
+ * @param {number} g - Green value (0-255)
+ * @param {number} b - Blue value (0-255)
+ * @returns {string} HEX color code
+ */
+static rgbToHex(r, g, b) {
+  // Clamp values to valid range
+  const clamp = (value) => Math.max(0, Math.min(255, Math.round(value)));
+  
+  const hexR = clamp(r).toString(16).padStart(2, '0');
+  const hexG = clamp(g).toString(16).padStart(2, '0');
+  const hexB = clamp(b).toString(16).padStart(2, '0');
+  
+  return `#${hexR}${hexG}${hexB}`.toUpperCase();
+}
 
   /**
    * Convert RGB object to CSS string

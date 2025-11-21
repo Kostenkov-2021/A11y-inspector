@@ -1,11 +1,17 @@
 var currentReport = null;
+var currentSelectedFormat = "html";
 
 
 const selectAsFormatIn = document.getElementById("selectAsFormatIn");
 const downloadAsFormat = document.getElementById("downloadAsFormat");
 const contentHTML = document.getElementById("report--content--html");
+const formatSelectedPreviewContainers = {
+    "html": document.getElementById("report--content--html"),
+    "markdown": document.getElementById("report--content--markdown"),
+    "json": document.getElementById("report-content--json")
+};
 
-async function downloadAsHTML(){
+function downloadAsHTML(reportData){
     
     const styles = `
     body{
@@ -456,34 +462,82 @@ function init(reportData){
             </div>
             <div id="issuses__list"></div>
         </main>
-        <script>let currentReport = ${JSON.stringify(currentReport)};</script>
+        <script>let currentReport = ${JSON.stringify(reportData)};</script>
         <script>${script}</script>
         <script>init(currentReport);</script>
 </body>
 </html>
     `
-    const blob = new Blob([pageWithHTML], { type: "text/plain" });
-    const date = (new Date(currentReport.timestamp)).toLocaleString('ru-RU');
-    console.log(date);
+    const date = (new Date(reportData.timestamp)).toLocaleString('ru-RU');
     const formatter = date.replace(".", '_').replace(".", '_').replace(" ", '_').replace(",", "_").replace(":", "_"); 
+    downloadFile(pageWithHTML, "report_" + formatter + ".html");
+}
+
+function downloadAsJSON(reportData){
+    const fileContent = JSON.stringify(reportData, true, 4);
+    const date = (new Date(reportData.timestamp)).toLocaleString('ru-RU');
+    const formatter = date.replace(".", '_').replace(".", '_').replace(" ", '_').replace(",", "_").replace(":", "_"); 
+    downloadFile(fileContent, "report_" + formatter + ".json");
+}
+
+
+function downloadFile(fileContent, fileName, fileType="text/plain"){
+    const blob = new Blob([fileContent], { type: fileType });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = "report_" + formatter + ".html";
+    a.download = fileName;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 }
 
+function showInJsonFormat(reportData){
+    let container = document.getElementById("report-content--json--preview");
+    container.innerText = JSON.stringify(reportData, true, 4);
+}
+
 
 
 document.addEventListener('DOMContentLoaded', function() {
+    
     chrome.storage.local.get("currentReport", (result) => {
         currentReport = result.currentReport;
         init(currentReport);
+        showInJsonFormat(currentReport);
     });
+    
     downloadAsFormat.addEventListener("click", function() {
-        downloadAsHTML();
-    })
+        switch (currentSelectedFormat) {
+            case "html":
+                downloadAsHTML(currentReport);
+                break;
+            case "json":
+                downloadAsJSON(currentReport);
+                break;
+        }
+        
+    });
+    selectAsFormatIn.addEventListener("change", function() {
+        currentSelectedFormat = selectAsFormatIn.value;
+        [...Object.values(formatSelectedPreviewContainers)].forEach((item) => {
+            item.hidden = true;
+            console.log(item);
+        })
+        switch (currentSelectedFormat) {
+            case "html":
+                formatSelectedPreviewContainers["html"].hidden = false;
+                break;
+            case "markdown":
+                formatSelectedPreviewContainers["markdown"].hidden = false;
+                break;
+            case "json":
+                formatSelectedPreviewContainers["json"].hidden = false;
+                break;
+            default:
+                formatSelectedPreviewContainers["html"].hidden = false;
+                break;
+        }
+    });
 });

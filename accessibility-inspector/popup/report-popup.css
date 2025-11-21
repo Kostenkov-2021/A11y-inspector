@@ -189,17 +189,35 @@ select option:checked {
   background-color: #d93025;
   color: white;
 }
+
 .menu {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px black solid;
 }
+
 .menu__download {
     display: flex;
     align-items: center;
     flex-direction: row;
     justify-content: center;
 }
+
 #selectAsFormatIn {
     margin-right: 1rem;
+}
+
+#report-content--json {
+    width: 100%;
+}
+
+#report-content--json pre {
+    max-width: 95%;
+    white-space: break-spaces;
+}
+
+#report-content--json pre code {
+    display: flex;
 }

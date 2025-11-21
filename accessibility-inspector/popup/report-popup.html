@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <title>Отчет</title>
+    <title>Предпросмотр отчета</title>
     <meta charset="utf-8">
     <meta http-equiv="Content-Security-Policy" 
       content="script-src 'self' 'unsafe-inline'">
@@ -9,12 +9,12 @@
 </head>
 <body id="popup-body-report">
     <nav class="menu">
-        <h1>Отчет по доступности сайта</h1>
+        <h1>Предпросмотр отчета по доступности сайта</h1>
         <div class="menu__download">
             <select id="selectAsFormatIn">
-                <option>HTML</option>
-                <option>JSON</option>
-                <option>MARKDOWN</option>
+                <option value="html">HTML</option>
+                <option value="json">JSON</option>
+                <option value="markdown">MARKDOWN</option>
             </select>
             <button class="primary-btn" id="downloadAsFormat"> Download </button>
         </div>
@@ -44,7 +44,7 @@
                     <strong>Ошибок: </strong>
                     <p id="summary--about--errors">0</p>
                 </div>
-            </div>
+            
         </header>
         <main>
             <h2>Подробности</h2>
@@ -62,7 +62,6 @@
                     </select>
                 </div>
                 <div class="issuses__controls__buttons">
-
                     <button class="primary-btn" id="btn-expand-issuses">Expand all</button>
                     <div class="issuses__controls__buttons__filters">
                         <button class="secondary-btn" id="btn-reset-filters">Reset filters</button>
@@ -72,6 +71,12 @@
             </div>
             <div id="issuses__list"></div>
         </main>
+    </div>
+    <div id="report--content--markdown" hidden>
+        <div id="report--content--markdown--preview"></div>
+    </div>
+    <div id="report-content--json">
+        <pre><code id="report-content--json--preview"></code></pre>
     </div>
     <script src="report-popup.js"></script>
     <script src="report-popup-local.js"></script>

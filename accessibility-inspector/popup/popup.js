@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const summaryStats = document.getElementById('summary-stats');
   const buttonText = checkBtn.querySelector('.button-text');
   const loadingSpinner = checkBtn.querySelector('.loading-spinner');
+  const openReport = document.getElementById("open-report");
 
   // Current report data
   let currentReport = null;
@@ -31,6 +32,7 @@ document.addEventListener('DOMContentLoaded', function() {
     downloadBtn.addEventListener('click', downloadReport);
     copyBtn.addEventListener('click', copyReportToClipboard);
     urlInput.addEventListener('keypress', handleUrlInputKeypress);
+    openReport.addEventListener("click", openReportAsWindow);
 
     // Load saved data
     loadSavedData();
@@ -174,7 +176,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         currentReport = reportData;
-        currentFormat = response.format;
         displayResults(currentReport);
         showStatus('Проверка успешно завершена!', 'success');
       } catch (error) {
@@ -189,12 +190,12 @@ document.addEventListener('DOMContentLoaded', function() {
   /**
    * Display check results
    */
-  function displayResults(report, format) {
+  function displayResults(report) {
     // Show summary statistics
-    displaySummaryStats(report, format);
+    displaySummaryStats(report);
 
     // Display full report in selected format
-    displayReportContent(report, format);
+    displayReportContent(report);
 
     // Show results section
     resultsDiv.classList.remove('hidden');
@@ -204,7 +205,7 @@ document.addEventListener('DOMContentLoaded', function() {
   /**
    * Display summary statistics
    */
-  function displaySummaryStats(reportData, format) {
+  function displaySummaryStats(reportData) {
     try {
       let summary;
       
@@ -249,7 +250,9 @@ document.addEventListener('DOMContentLoaded', function() {
   /**
    * Display report content based on selected format
    */
-  function displayReportContent(reportData, format) {    
+  function displayReportContent(reportData) {
+    const format = formatSelect.value;
+
     try {
       let content = '';
       
@@ -288,11 +291,18 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function formatAsHtml(reportData) {
+    let report;
+    
     if (typeof reportData === 'string') {
-        return reportData;
+      try {
+        report = JSON.parse(reportData);
+      } catch (e) {
+        return `<p>Ошибка парсинга JSON: ${e.message}</p>`;
+      }
+    } else {
+      report = reportData;
     }
 
-    const report = reportData;
     const issues = report.issues || [];
     
     let html = `
@@ -378,9 +388,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
       switch (format) {
         case 'html':
-          content = typeof currentReport === 'string'
-              ? currentReport
-              : formatAsHtml(currentReport);
+          content = formatAsHtml(currentReport);
           mimeType = 'text/html';
           extension = 'html';
           break;
@@ -427,9 +435,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
       switch (format) {
         case 'html':
-          content = typeof currentReport === 'string'
-              ? currentReport
-              : formatAsHtml(currentReport);
+          content = formatAsText(currentReport).replace(/<[^>]*>/g, '');
           break;
         case 'text':
           content = typeof currentReport === 'string' ? 
@@ -514,4 +520,18 @@ document.addEventListener('DOMContentLoaded', function() {
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#039;");
   }
+
+  function openReportAsWindow(){
+    chrome.storage.local.set({
+      "currentReport": currentReport
+    }, () => {
+      chrome.windows.create({
+        url: "popup/report-popup.html",
+        type: "popup",
+        width: 900,
+        height: 650
+      })
+    });
+  }
 });
+

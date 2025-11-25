@@ -27,7 +27,8 @@
         </div>
       </div>
       
-      <div class="input-group">
+      <!-- Hidden div with class: "input-group" -->
+      <div class="input-group" hidden>
         <label for="format-select">Формат отчета:</label>
         <select id="format-select" aria-describedby="format-help">
           <option value="json">JSON</option>
@@ -46,7 +47,7 @@
         </button>
         
         <button id="current-page-btn" class="secondary-btn" type="button">
-          Current Page
+          Проверить текущую страницу
         </button>
       </div>
       
@@ -61,18 +62,22 @@
         <h2 id="results-heading">Результаты проверки</h2>
         
         <div class="summary-stats" id="summary-stats"></div>
-        
-        <div class="report-actions">
-          <button id="download-btn" class="secondary-btn">
+        <!-- Hidden div with class: "report-actions" -->
+        <div class="report-actions" hidden>
+          <button id="download-btn" class="secondary-btn" hidden>
             Скачать отчет
           </button>
-          <button id="copy-btn" class="secondary-btn">
+          <button id="copy-btn" class="secondary-btn" hidden>
             Скопировать в буфер обмена
           </button>
         </div>
-        
-        <div id="report-content" class="report-content"></div>
+        <!-- Hidden div with id: "report-content" -->
+        <div id="report-content" class="report-content" hidden></div>
+        <div style="display: flex;justify-content: center;">
+          <button id="open-report" class="primary-btn"> Просмотреть отчет </button>
+        </div>
       </section>
+      
     </main>
     
     <footer role="contentinfo" class="footer">

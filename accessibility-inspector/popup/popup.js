@@ -174,6 +174,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         currentReport = reportData;
+        currentFormat = response.format;
         displayResults(currentReport);
         showStatus('Проверка успешно завершена!', 'success');
       } catch (error) {
@@ -188,12 +189,12 @@ document.addEventListener('DOMContentLoaded', function() {
   /**
    * Display check results
    */
-  function displayResults(report) {
+  function displayResults(report, format) {
     // Show summary statistics
-    displaySummaryStats(report);
+    displaySummaryStats(report, format);
 
     // Display full report in selected format
-    displayReportContent(report);
+    displayReportContent(report, format);
 
     // Show results section
     resultsDiv.classList.remove('hidden');
@@ -203,7 +204,7 @@ document.addEventListener('DOMContentLoaded', function() {
   /**
    * Display summary statistics
    */
-  function displaySummaryStats(reportData) {
+  function displaySummaryStats(reportData, format) {
     try {
       let summary;
       
@@ -248,9 +249,7 @@ document.addEventListener('DOMContentLoaded', function() {
   /**
    * Display report content based on selected format
    */
-  function displayReportContent(reportData) {
-    const format = formatSelect.value;
-    
+  function displayReportContent(reportData, format) {    
     try {
       let content = '';
       
@@ -289,18 +288,11 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function formatAsHtml(reportData) {
-    let report;
-    
     if (typeof reportData === 'string') {
-      try {
-        report = JSON.parse(reportData);
-      } catch (e) {
-        return `<p>Ошибка парсинга JSON: ${e.message}</p>`;
-      }
-    } else {
-      report = reportData;
+        return reportData;
     }
 
+    const report = reportData;
     const issues = report.issues || [];
     
     let html = `
@@ -386,7 +378,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
       switch (format) {
         case 'html':
-          content = formatAsHtml(currentReport);
+          content = typeof currentReport === 'string'
+              ? currentReport
+              : formatAsHtml(currentReport);
           mimeType = 'text/html';
           extension = 'html';
           break;
@@ -433,7 +427,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
       switch (format) {
         case 'html':
-          content = formatAsText(currentReport).replace(/<[^>]*>/g, '');
+          content = typeof currentReport === 'string'
+              ? currentReport
+              : formatAsHtml(currentReport);
           break;
         case 'text':
           content = typeof currentReport === 'string' ? 

@@ -96,12 +96,20 @@ async function handleAccessibilityCheck(url, format) {
     const report = reportResults[0].result;
     
     // Validate report is not HTML error page
-    if (typeof report === 'string' && report.trim().startsWith('<!DOCTYPE') || 
-        report.includes('<html>') || report.includes('</html>')) {
-      throw new Error('Received HTML instead of accessibility report. The URL might be inaccessible.');
+    if (
+        format !== 'html' &&
+        typeof report === 'string' &&
+        (
+            report.trim().startsWith('<!DOCTYPE') ||
+            report.includes('<html') ||
+            report.includes('</html>')
+        )
+    ) {
+        throw new Error('Received HTML instead of accessibility report. The URL might be inaccessible.');
     }
 
-    return { report };
+    return { report, format };
+
 
   } catch (error) {
     console.error('Error in handleAccessibilityCheck:', error);

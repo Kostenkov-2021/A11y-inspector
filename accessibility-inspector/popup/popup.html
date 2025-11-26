@@ -27,8 +27,7 @@
         </div>
       </div>
       
-      <!-- Hidden div with class: "input-group" -->
-      <div class="input-group" hidden>
+      <div class="input-group">
         <label for="format-select">Формат отчета:</label>
         <select id="format-select" aria-describedby="format-help">
           <option value="json">JSON</option>
@@ -36,7 +35,7 @@
           <option value="text">Текст</option>
         </select>
         <div id="format-help" class="help-text">
-          Выберите формат загрузки отчета
+          Выберите формат загрузки отчета 
         </div>
       </div>
       
@@ -46,9 +45,7 @@
           <span class="loading-spinner hidden" aria-hidden="true"></span>
         </button>
         
-        <button id="current-page-btn" class="secondary-btn" type="button">
-          Проверить текущую страницу
-        </button>
+       
       </div>
       
       <div id="status" 
@@ -62,22 +59,18 @@
         <h2 id="results-heading">Результаты проверки</h2>
         
         <div class="summary-stats" id="summary-stats"></div>
-        <!-- Hidden div with class: "report-actions" -->
-        <div class="report-actions" hidden>
-          <button id="download-btn" class="secondary-btn" hidden>
+        
+        <div class="report-actions">
+          <button id="download-btn" class="secondary-btn">
             Скачать отчет
           </button>
-          <button id="copy-btn" class="secondary-btn" hidden>
+          <button id="copy-btn" class="secondary-btn">
             Скопировать в буфер обмена
           </button>
         </div>
-        <!-- Hidden div with id: "report-content" -->
-        <div id="report-content" class="report-content" hidden></div>
-        <div style="display: flex;justify-content: center;">
-          <button id="open-report" class="primary-btn"> Просмотреть отчет </button>
-        </div>
+        
+        <div id="report-content" class="report-content"></div>
       </section>
-      
     </main>
     
     <footer role="contentinfo" class="footer">

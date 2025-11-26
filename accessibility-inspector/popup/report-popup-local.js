@@ -100,7 +100,7 @@ function downloadAsHTML(reportData){
     justify-content: space-between;
 }
 
-.issues__list__details__summary__issuse__default {
+.issues__list__details__summary__issue__default {
     background-color: #1a73e8;
     color: #ffffff;
 }
@@ -109,7 +109,7 @@ function downloadAsHTML(reportData){
     background-color: #f9ab00;
 }
 
-.issues__list__details__summary__issuse__error {
+.issues__list__details__summary__issue__error {
     background-color: #d93025;
     color: #ffffff;
 }
@@ -285,13 +285,13 @@ select option:checked {
 }
     `;
     const script = `
-    var isAllissuesElementsExpanded = true;
+    var isAllIssuesElementsExpanded = true;
 
 const popupBodyReport = document.getElementById("popup-body-report");
 
 const summaryUrl = document.getElementById("summary--about--showurl");
 const summaryDatetime = document.getElementById("summary--about--showdatetime");
-const summaryTotalissues = document.getElementById("summary--about--total");
+const summaryTotalIssues = document.getElementById("summary--about--total");
 const summaryWarnings = document.getElementById("summary--about--warnings");
 const summaryErrors = document.getElementById("summary--about--errors");
 
@@ -299,7 +299,7 @@ const selectorByIssuesTypes = document.getElementById("selector-by-issues-types"
 const selectorByCategories = document.getElementById("selector-by-categorys");
 const btnAcceptFilters = document.getElementById("btn-accept-filters");
 const btnResetFilters = document.getElementById("btn-reset-filters");
-const btnExpandissues = document.getElementById("btn-expand-issues");
+const btnExpandIssues = document.getElementById("btn-expand-issues");
 
 
 function createPairConstructElement(title, value, colorValue){
@@ -327,44 +327,44 @@ function createPairConstructElement(title, value, colorValue){
 
 
 
-function generateIssues(position, issues){
+function generateIssue(position, issue){
     /* Создает развертывающийся виджет для единичной проблемы */
-    const cnt_category = Object.hasOwn(issues, "category") ? issues.category : "Категория не указана";
-    const cnt_element = Object.hasOwn(issues, "element") ? issues.element : null;
-    const cnt_message = (Object.hasOwn(issues, "message") ? issues.message : "Сообщение отсутсвует");
-    const cnt_selector = Object.hasOwn(issues, "selector") ? issues.selector : null;
-    const cnt_type = Object.hasOwn(issues, "type") ? issues.type : "Не указано";
+    const cnt_category = Object.hasOwn(issue, "category") ? issue.category : "Категория не указана";
+    const cnt_element = Object.hasOwn(issue, "element") ? issue.element : null;
+    const cnt_message = (Object.hasOwn(issue, "message") ? issue.message : "Сообщение отсутсвует");
+    const cnt_selector = Object.hasOwn(issue, "selector") ? issue.selector : null;
+    const cnt_type = Object.hasOwn(issue, "type") ? issue.type : "Не указано";
 
     let details = document.createElement("details");
     details.setAttribute("data-category", cnt_category);
-    details.setAttribute("data-issues-type", cnt_type);
+    details.setAttribute("data-issue-type", cnt_type);
     details.classList.add("issues__list__details");
-    details.id = "issues__list__issues__" + position;
+    details.id = "issues__list__issue__" + position;
     let summary = document.createElement("summary");
     summary.classList.add("issues__list__details__summary__issues");
     switch (cnt_type) {
         case "error":
-            summary.classList.add("issues__list__details__summary__issues__error");
+            summary.classList.add("issues__list__details__summary__issue__error");
             break;
         case "warning":
-            summary.classList.add("issues__list__details__summary__issues__warning");
+            summary.classList.add("issues__list__details__summary__issue__warning");
             break;
         default:
-            summary.classList.add("issues__list__details__summary__issues__default");
+            summary.classList.add("issues__list__details__summary__issue__default");
             break;
     }
     let summary_container = document.createElement("span");
     summary_container.classList.add("issues__list__details__title");
     let category_span = document.createElement("h3");
     category_span.innerHTML = "Issue: " + position + " > <strong>Category</strong>: " + cnt_category;
-    let span_issues_type = document.createElement("span");
-    span_issues_type.innerText = cnt_type;
+    let span_issue_type = document.createElement("span");
+    span_issue_type.innerText = cnt_type;
     summary_container.appendChild(category_span);
-    summary_container.appendChild(span_issues_type);
+    summary_container.appendChild(span_issue_type);
     summary.appendChild(summary_container);
     details.appendChild(summary);
 
-    led details_contained = document.createElement("div");
+    let details_contained = document.createElement("div");
 
     if (cnt_selector){
         details_contained.appendChild(createPairConstructElement("Selector", cnt_selector));
@@ -399,7 +399,7 @@ function generateIssues(position, issues){
         contrastParametersContainer.style = "margin-left: .7rem;"
 
         contrastParametersContainer.appendChild(createPairConstructElement(
-            "Score", issues.details.suggestions.score
+            "Score", issue.details.suggestions.score
         ));
 
         contrastParametersContainer.appendChild(createPairConstructElement("Background element:"));
@@ -407,49 +407,49 @@ function generateIssues(position, issues){
         let listBackColorShowed = document.createElement("ul");
         [
             createPairConstructElement(
-                "backroundColor", issues.details.backgroundColor, issues.details.backgroundColor),
+                "backroundColor", issue.details.backgroundColor, issue.details.backgroundColor),
             createPairConstructElement(
-                "textColor", issues.details.textColor, issues.details.textColor),
+                "textColor", issue.details.textColor, issue.details.textColor),
             createPairConstructElement(
-                "fontSize", issues.details.fontSize),
+                "fontSize", issue.details.fontSize),
             createPairConstructElement(
-                "fontWeight", issues.details.fontWeight),
+                "fontWeight", issue.details.fontWeight),
             createPairConstructElement(
-                "ratio", issues.details.ratio),
+                "ratio", issue.details.ratio),
             createPairConstructElement(
-                "requiredRatio", issues.details.requiredRatio)
+                "requiredRatio", issue.details.requiredRatio)
         ].forEach(item => {
             let itemShowed = document.createElement("li");
             itemShowed.appendChild(item);
             listBackColorShowed.appendChild(itemShowed);
         })
         contrastParametersContainer.appendChild(listBackColorShowed);
-        details_containet.appendChild(contrastParametersContainer);
+        details_contained.appendChild(contrastParametersContainer);
 
         
 
-        if (issues.details.suggestions){
+        if (issue.details.suggestions){
             contrastParametersContainer.appendChild(createPairConstructElement("Suggestions:"));
 
             let suggestionDiv = document.createElement("div");
             suggestionDiv.style = "margin-left: 1rem;"
             suggestionDiv.appendChild(
                 createPairConstructElement(
-                    "Improvement", issues.details.suggestions.improvement))
+                    "Improvement", issue.details.suggestions.improvement))
             suggestionDiv.appendChild(document.createElement("hr"));
             suggestionDiv.appendChild(
                 createPairConstructElement(
-                    "Current color", issues.details.suggestions.current, issues.details.suggestions.current))
+                    "Current color", issue.details.suggestions.current, issue.details.suggestions.current))
             suggestionDiv.appendChild(
                 createPairConstructElement(
-                    "Suggestion color", issues.details.suggestions.suggested, issues.details.suggestions.suggested))
+                    "Suggestion color", issue.details.suggestions.suggested, issue.details.suggestions.suggested))
             suggestionDiv.appendChild(document.createElement("hr"));
             suggestionDiv.appendChild(
                 createPairConstructElement(
-                    "Current ratio", issues.details.suggestions.currentRatio))
+                    "Current ratio", issue.details.suggestions.currentRatio))
             suggestionDiv.appendChild(
                 createPairConstructElement(
-                    "Suggestion ratio", issues.details.suggestions.suggestedRatio))
+                    "Suggestion ratio", issue.details.suggestions.suggestedRatio))
             contrastParametersContainer.appendChild(suggestionDiv);
         }
     }
@@ -457,10 +457,10 @@ function generateIssues(position, issues){
     return details;
 }
 
-function showDetailsissues(issues){
+function showDetailsIssues(issues){
     const issuesList = document.getElementById("issues__list");
     issues.forEach((element, i) => {
-        issuesList.appendChild(generateIssues(i, element));
+        issuesList.appendChild(generateIssue(i, element));
     });
 
 }
@@ -469,8 +469,8 @@ function getReportAsHTML(){
 }
 
 function initSelectorsForSorting(issuesElements){
-    let issuesTypes = new Set([...issuesElements].map((item) => item.getAttribute("data-issues-type")));
-    issuesTypes.forEach((item, i) => {
+    let issueTypes = new Set([...issuesElements].map((item) => item.getAttribute("data-issue-type")));
+    issueTypes.forEach((item, i) => {
         let opt = document.createElement("option");
         opt.innerText = item;
         opt.value = item;
@@ -499,17 +499,17 @@ function init(reportData){
     summaryUrl.innerText = reportData.url;
     summaryUrl.setAttribute("href", reportData.url);
     summaryDatetime.innerText = (new Date(reportData.timestamp)).toLocaleString('ru-RU');
-    summaryTotalissues.innerText = reportData.summary.total;
+    summaryTotalIssues.innerText = reportData.summary.total;
     summaryWarnings.innerText = reportData.summary.warnings;
     summaryErrors.innerText = reportData.summary.errors;
-    showDetailsissues(reportData.issues);
+    showDetailsIssues(reportData.issues);
 
     const issuesElements = document.getElementsByClassName("issues__list__details");
     [...issuesElements].forEach(item => {
         item.addEventListener("click", function() {
             setTimeout(() => {
-                isAllissuesElementsExpanded = checkIsAllExpandedElements(issuesElements);
-                btnExpandissues.innerText = isAllissuesElementsExpanded ? "Expand all" : "Hide All";
+                isAllIssuesElementsExpanded = checkIsAllExpandedElements(issuesElements);
+                btnExpandIssues.innerText = isAllIssuesElementsExpanded ? "Expand all" : "Hide All";
             }, 5)
             
         })
@@ -520,7 +520,7 @@ function init(reportData){
     btnAcceptFilters.addEventListener("click", function() {
         let filtersElements = [...issuesElements];
         let categoryValue = selectorByCategories.value;
-        let issuesTypeValue = selectorByIssuesTypes.value;
+        let issueTypeValue = selectorByIssuesTypes.value;
         filtersElements.forEach((item) => {
             item.classList.add("hidden");
         });
@@ -529,9 +529,9 @@ function init(reportData){
                 item.getAttribute("data-category") === categoryValue
             );
         }
-        if (issuesTypeValue != "null"){
+        if (issueTypeValue != "null"){
             filtersElements = filtersElements.filter(item => 
-                item.getAttribute("data-issues-type") === issuesTypeValue
+                item.getAttribute("data-issue-type") === issueTypeValue
             );
         }
         filtersElements.forEach((item) => {
@@ -544,14 +544,14 @@ function init(reportData){
             item.classList.remove("hidden");
         })
         selectorByCategories.value = "null";
-        selectorByIssuesTypes.value = "null";
+        selectorByIssueTypes.value = "null";
     });
-    btnExpandissues.addEventListener("click", function() {
+    btnExpandIssues.addEventListener("click", function() {
         [...issuesElements].forEach(item => {
-            item.toggleAttribute("open", isAllissuesElementsExpanded);
+            item.toggleAttribute("open", isAllIssuesElementsExpanded);
         });
-        isAllissuesElementsExpanded = !isAllissuesElementsExpanded;
-        btnExpandissues.innerText = isAllissuesElementsExpanded ? "Expand all" : "Hide All";
+        isAllIssuesElementsExpanded = !isAllIssuesElementsExpanded;
+        btnExpandIssues.innerText = isAllIssuesElementsExpanded ? "Expand all" : "Hide All";
     });   
 }
     `;
@@ -594,7 +594,7 @@ function init(reportData){
             <h2>Подробности</h2>
             <div class="issues__controls">
                 <div class="issues__controls__selector">
-                    <label for="selector-by-issues-types">By issues types</label>
+                    <label for="selector-by-issues-types">By issue types</label>
                     <select id="selector-by-issues-types">
                         <option value="null"> -- Not selected --</option>
                     </select>
@@ -606,11 +606,10 @@ function init(reportData){
                     </select>
                 </div>
                 <div class="issues__controls__buttons">
-
-                    <button class="primary-btn" id="btn-expand-issues">Expand all</button>
+                    <button class="primary-btn" id="btn-expand-issues">Развернуть всё</button>
                     <div class="issues__controls__buttons__filters">
-                        <button class="secondary-btn" id="btn-reset-filters">Reset filters</button>
-                        <button class="primary-btn" id="btn-accept-filters">Accept filters</button>
+                        <button class="secondary-btn" id="btn-reset-filters">Сбросить фильтры</button>
+                        <button class="primary-btn" id="btn-accept-filters">Применить фильтры</button>
                     </div>
                 </div>
             </div>

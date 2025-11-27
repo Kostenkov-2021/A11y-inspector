@@ -13,6 +13,8 @@ class ReportGenerator {
   generate(data, format) {
     try {
       switch (format) {
+        case 'markdown':
+          return this.generateJSON(data);
         case 'json':
           return this.generateJSON(data);
         case 'html':

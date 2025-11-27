@@ -187,7 +187,7 @@ function initSelectorsForSorting(issuesElements){
         let opt = document.createElement("option");
         opt.innerText = item;
         opt.value = item;
-        selectorByIssueTypes.appendChild(opt);
+        selectorByIssuesTypes.appendChild(opt);
     });
     let categoryTypes = new Set([...issuesElements].map((item) => item.getAttribute("data-category")));
     categoryTypes.forEach((item, i) => {
@@ -233,7 +233,7 @@ function init(reportData){
     btnAcceptFilters.addEventListener("click", function() {
         let filtersElements = [...issuesElements];
         let categoryValue = selectorByCategories.value;
-        let issueTypeValue = selectorByIssueTypes.value;
+        let issueTypeValue = selectorByIssuesTypes.value;
         filtersElements.forEach((item) => {
             item.classList.add("hidden");
         });

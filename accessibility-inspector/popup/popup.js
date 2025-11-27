@@ -5,12 +5,13 @@ document.addEventListener('DOMContentLoaded', function() {
   const checkBtn = document.getElementById('check-btn');
   const statusDiv = document.getElementById('status');
   const resultsDiv = document.getElementById('results');
-  const reportContent = document.getElementById('report-content');
+  // const reportContent = document.getElementById('report-content');
   const downloadBtn = document.getElementById('download-btn');
   const copyBtn = document.getElementById('copy-btn');
   const summaryStats = document.getElementById('summary-stats');
   const buttonText = checkBtn.querySelector('.button-text');
   const loadingSpinner = checkBtn.querySelector('.loading-spinner');
+  const openReport = document.getElementById("open-report");
 
   // Current report data
   let currentReport = null;
@@ -108,7 +109,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
         currentReport = reportData;
         currentFormat = response.format;
-        displayResults(currentReport);
+        console.log("===");
+        console.log(currentFormat);
+        console.log(currentReport);
+        displayResults(currentReport, currentFormat);
+        openReport.addEventListener("click", () => { openReportAsWindow(reportData, currentFormat) });
+        
         showStatus('Проверка успешно завершена!', 'success');
       } catch (error) {
         showStatus(`Ошибка обработки результатов: ${error.message}`, 'error');
@@ -120,15 +126,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function displayResults(report, format) {
     displaySummaryStats(report, format);
-    displayReportContent(report, format);
+    // displayReportContent(report, format);
     resultsDiv.classList.remove('hidden');
-    resultsDiv.scrollIntoView({ behavior: 'smooth' });
+    // resultsDiv.scrollIntoView({ behavior: 'smooth' });
   }
 
   function displaySummaryStats(reportData, format) {
     try {
       let summary;
-      if (typeof reportData === 'object' && reportData.summary) {
+      if (format == 'html'){
+        const doc = (new DOMParser()).parseFromString(reportData, 'text/html');
+        const totalIssuesElement = doc.getElementsByClassName('total')[0];
+        const errorsElement = doc.getElementsByClassName('errors')[0];
+        const warningsElement = doc.getElementsByClassName('warnings')[0];
+        if (totalIssuesElement && errorsElement && warningsElement) {
+          summary = { 
+            total: totalIssuesElement.textContent.trim(), 
+            errors: errorsElement.textContent.trim(), 
+            warnings: warningsElement.textContent.trim()
+          };
+        } else {
+          summary = { total: 1, errors: 2, warnings: 3 };
+        }
+        
+      } else if (typeof reportData === 'object' && reportData.summary) {
         summary = reportData.summary;
       } else if (typeof reportData === 'string') {
         const totalMatch = reportData.match(/Total Issues:?\s*(\d+)/i);
@@ -139,7 +160,7 @@ document.addEventListener('DOMContentLoaded', function() {
           errors: errorsMatch ? parseInt(errorsMatch[1]) : 0,
           warnings: warningsMatch ? parseInt(warningsMatch[1]) : 0
         };
-      } else {
+      }  else {
         summary = { total: 0, errors: 0, warnings: 0 };
       }
 
@@ -237,6 +258,50 @@ document.addEventListener('DOMContentLoaded', function() {
     return `<pre>${text}</pre>`;
   }
 
+  function formatAsMarkdown(data) {
+        let _report = "# Отчет по доступности сайта\n";
+    _report += "## Сводка\n\n";
+    _report += "**Сайт:** " + data.url + "\n";
+    _report += "**Время:** " + data.timestamp + "\n";
+    _report += "**Всего проблем:** " + data.summary.total + "\n";
+    _report += "**Предупреждений:** " + data.summary.warnings + "\n";
+    _report += "**Ошибок:** " + data.summary.errors + "\n\n";
+    _report += "## Детализация ошибок \n";
+    data.issues.forEach((item, i) => {
+        _report += "### **Issue:** " + i + "\n\n";
+        _report += "**Type:** " + item.type + "\n";
+        _report += "**Category**" + item.category + "\n"
+        _report += "**Message:** " + item.message + "\n";
+        _report += item.selector ? "**Selector:** " + item.selector + "\n" : "";
+        _report += item.element ? "**Element code:**\n```\n" + item.element + "\n```\n" : "";
+        if (item.category === "contrast"){
+            _report += "#### Contrast parameters\n\n";
+            _report += "**Score:** " + item.details.suggestions.score + "\n";
+            _report += "**Improvement:** " + item.details.suggestions.improvement + "\n\n"
+            _report += "##### Background info\n\n"
+            _report += "**backgroundColor:** " + item.details.backgroundColor + "\n";
+            _report += "**fontSize:** " + item.details.fontSize + "\n";
+            _report += "**fontWeight:** " + item.details.fontWeight + "\n";
+            _report += "**ratio:** " + item.details.ratio + "\n";
+            _report += "**requiredRatio:** " + item.details.requiredRatio + "\n";
+            _report += "**textColor:** " + item.details.textColor + "\n";
+            _report += "##### Top element info\n\n";
+            _report += "**Color:**\n";
+            _report += " - **RGB:** " + item.details.suggestions.current + "\n";
+            _report += " - **HEX:** " + item.details.suggestions.currentHex + "\n\n";
+            _report += "**Ratio:** " + item.details.suggestions.currentRatio + "\n";
+            _report += "##### Top element suggestions\n\n";
+            _report += "**Suggested color:** \n";
+            _report += " - **RGB:** " + item.details.suggestions.suggested + "\n";
+            _report += " - **HEX:** " + item.details.suggestions.suggestedHex + "\n\n";
+            _report += "**Ratio:** " + item.details.suggestions.suggestedRatio + "\n";
+        }
+        _report += "\n------------\n";
+    });
+
+    return _report;
+  }
+
   function downloadReport() {
     if (!currentReport) { showStatus('Нет данных для скачивания', 'error'); return; }
     try {
@@ -245,6 +310,7 @@ document.addEventListener('DOMContentLoaded', function() {
       switch (format) {
         case 'html': content = typeof currentReport === 'string' ? currentReport : formatAsHtml(currentReport); mimeType = 'text/html'; extension = 'html'; break;
         case 'text': content = typeof currentReport === 'string' ? currentReport : formatAsText(currentReport); mimeType = 'text/plain'; extension = 'txt'; break;
+        case 'markdown': content = typeof currentReport === 'string' ? currentReport : formatAsMarkdown(currentReport); mimeType = 'text/plain'; extension = 'md'; break;
         case 'json':
         default: content = typeof currentReport === 'string' ? currentReport : JSON.stringify(currentReport, null, 2); mimeType = 'application/json'; extension = 'json'; break;
       }
@@ -269,6 +335,7 @@ document.addEventListener('DOMContentLoaded', function() {
       switch (format) {
         case 'html': content = typeof currentReport === 'string' ? currentReport : formatAsHtml(currentReport); break;
         case 'text': content = typeof currentReport === 'string' ? currentReport.replace(/<[^>]*>/g, '') : formatAsText(currentReport).replace(/<[^>]*>/g, ''); break;
+        case 'markdown': content = typeof currentReport === 'string' ? currentReport : formatAsMarkdown(currentReport); break;
         case 'json': default: content = typeof currentReport === 'string' ? currentReport : JSON.stringify(currentReport, null, 2); break;
       }
       await navigator.clipboard.writeText(content);
@@ -298,4 +365,64 @@ document.addEventListener('DOMContentLoaded', function() {
   function hideResults() { resultsDiv.classList.add('hidden'); currentReport = null; }
   function isValidUrl(string) { try { const url = new URL(string); return url.protocol === 'http:' || url.protocol === 'https:'; } catch { return false; } }
   function escapeHtml(unsafe) { if (unsafe == null) return ''; return unsafe.toString().replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }
+
+  function openReportAsWindow(reportData, reportFormat){
+    let heading_popup = '';
+    let content = '';
+      switch (reportFormat) {
+          case 'html': 
+            content = formatAsHtml(reportData); 
+            heading_popup = 'data:text/html;charset=utf-8,';
+            break;
+          case 'text': 
+            content = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <style>
+                body { padding: 20px; font-family: sans-serif; }
+              </style>
+            </head>
+            <body>
+              <pre>${reportData}</pre>
+            </body>
+            </html>
+            `; 
+            heading_popup = 'data:text/html;charset=utf-8,';
+            break;
+          case 'markdown':
+            content = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <style>
+                body { padding: 20px; font-family: sans-serif; }
+              </style>
+            </head>
+            <body>
+              <pre>${
+                formatAsMarkdown(reportData)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;')
+              }</pre>
+            </body>
+            </html>
+            `
+            heading_popup = 'data:text/html;charset=utf-8,';
+            break;
+          case 'json':
+            heading_popup = 'data:text/json;charset=utf-8,';
+          default: content = JSON.stringify(reportData, null, 2); break;
+        }
+    chrome.windows.create({
+        url: heading_popup + encodeURIComponent(content),
+        type: "popup",
+        width: 900,
+        height: 650
+      });
+  }
+
 });

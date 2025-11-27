@@ -240,3 +240,10 @@ select{
   body{ width:420px; padding:14px; }
   .report-content{ font-size:12px; }
 }
+
+.report-actions {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}

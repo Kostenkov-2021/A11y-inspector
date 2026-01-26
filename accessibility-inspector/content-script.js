@@ -4,7 +4,7 @@
  */
 
 // Make sure all dependencies are loaded
-console.log('Accessibility Inspector content script loaded');
+console.log('Инспектор доступности загружен и готов к работе');
 
 // Global flag to indicate content script is ready
 window.a11yInspectorReady = true;
@@ -14,7 +14,7 @@ function initializeDependencies() {
   try {
     // Check and initialize ColorUtils if not available
     if (typeof ColorUtils === 'undefined') {
-      console.warn('ColorUtils not loaded, using fallback');
+      console.warn('Не удалось загрузить ColorUtils, использование запасного варианта');
       // Simple fallback color utils
       window.ColorUtils = {
         calculateContrastRatio: function(color1, color2) {
@@ -29,7 +29,7 @@ function initializeDependencies() {
 
     // Check and initialize A11yRules if not available
     if (typeof A11yRules === 'undefined') {
-      console.warn('A11yRules not loaded, using fallback');
+      console.warn('A11yRules не загружен, использование запасного варианта');
       window.A11yRules = {};
       window.A11yRuleUtils = {
         runAllChecks: function() { return []; }
@@ -64,7 +64,7 @@ initializeDependencies();
  * @returns {Object} Accessibility report with issues and summary
  */
 function runA11yChecks() {
-  console.log('Starting accessibility checks...');
+  console.log('Запуск проверки доступности...');
   
   const issues = [];
   
@@ -97,17 +97,17 @@ function runA11yChecks() {
     issues.push(...langIssues);
 
   } catch (error) {
-    console.error('Error during accessibility check:', error);
+    console.error('Ошибка при проверке доступности:', error);
     issues.push({
-      type: 'error',
-      category: 'system',
-      message: `Check execution error: ${error.message}`,
+      type: 'ошибка',
+      category: 'система',
+      message: `Ошибка выполнения проверки: ${error.message}`,
       element: null,
       selector: null
     });
   }
 
-  console.log(`Accessibility check completed: ${issues.length} issues found`);
+  console.log(`Проверка доступности завершена: обнаружено ${issues.length} проблем`);
   
   return {
     url: window.location.href,
@@ -133,9 +133,9 @@ function runBasicChecks() {
     images.forEach(img => {
       if (isElementVisible(img)) {
         issues.push({
-          type: 'error',
-          category: 'images',
-          message: 'Image missing alt attribute',
+          type: 'ошибка',
+          category: 'изображения',
+          message: 'У изображения отсутствует атрибут alt',
           element: img.outerHTML.slice(0, 100),
           selector: getSelector(img)
         });
@@ -146,9 +146,9 @@ function runBasicChecks() {
     const html = document.documentElement;
     if (!html.getAttribute('lang')) {
       issues.push({
-        type: 'error',
-        category: 'language',
-        message: 'Missing lang attribute on html element',
+        type: 'ошибка',
+        category: 'язык',
+        message: 'У элемента html отсутствует атрибут lang',
         element: html.outerHTML.slice(0, 100),
         selector: 'html'
       });
@@ -158,9 +158,9 @@ function runBasicChecks() {
     const h1s = document.querySelectorAll('h1');
     if (h1s.length === 0) {
       issues.push({
-        type: 'warning',
-        category: 'headings',
-        message: 'No H1 heading found',
+        type: 'предупреждение',
+        category: 'заголовки',
+        message: 'Отсутствует заголовок первого уровня H1',
         element: null,
         selector: null
       });
@@ -171,9 +171,9 @@ function runBasicChecks() {
     inputs.forEach(input => {
       if (!input.id || !document.querySelector(`label[for="${input.id}"]`)) {
         issues.push({
-          type: 'warning',
-          category: 'forms',
-          message: 'Input without associated label',
+          type: 'предупреждение',
+          category: 'формы',
+          message: 'У поля формы отсутствует атрибут label',
           element: input.outerHTML.slice(0, 100),
           selector: getSelector(input)
         });
@@ -183,9 +183,9 @@ function runBasicChecks() {
   } catch (error) {
     console.error('Error in basic checks:', error);
     issues.push({
-      type: 'error',
-      category: 'system',
-      message: `Basic check error: ${error.message}`,
+      type: 'ошибка',
+      category: 'система',
+      message: `Ошибка проверки: ${error.message}`,
       element: null,
       selector: null
     });
@@ -209,9 +209,9 @@ function checkColorContrast() {
       
       if (contrastResult && !contrastResult.meetsAA) {
         issues.push({
-          type: 'error',
-          category: 'contrast',
-          message: `Insufficient contrast: ${contrastResult.ratio.toFixed(2)}:1 (required ${contrastResult.requiredAARatio}:1)`,
+          type: 'ошибка',
+          category: 'контрастность',
+          message: `Недостаточный контраст: ${contrastResult.ratio.toFixed(2)}:1 (требуется ${contrastResult.requiredAARatio}:1)`,
           element: element.outerHTML.slice(0, 100),
           selector: getSelector(element),
           details: {
@@ -406,9 +406,9 @@ function checkAriaAttributes() {
       
       if (!hasText && !hasAltImage) {
         issues.push({
-          type: 'warning',
-          category: 'aria',
-          message: 'Element with aria-label without visible text content',
+          type: 'предупреждение',
+          category: 'aria-атрибуты',
+          message: 'Элемент с атрибутом aria-label без видимого текстового содержимого',
           element: el.outerHTML.slice(0, 100),
           selector: getSelector(el)
         });
@@ -421,9 +421,9 @@ function checkAriaAttributes() {
       const role = el.getAttribute('role');
       if (role && !isValidAriaRole(role)) {
         issues.push({
-          type: 'warning',
-          category: 'aria',
-          message: `Invalid ARIA role: ${role}`,
+          type: 'предупреждение',
+          category: 'aria-атрибуты',
+          message: `Недопустимая роль ARIA: ${role}`,
           element: el.outerHTML.slice(0, 100),
           selector: getSelector(el)
         });
@@ -466,9 +466,9 @@ function checkKeyboardNavigation() {
       const tabIndex = parseInt(el.getAttribute('tabindex'));
       if (tabIndex < -1) {
         issues.push({
-          type: 'error',
-          category: 'keyboard',
-          message: 'Invalid tabindex value',
+          type: 'ошибка',
+          category: 'клавиатура',
+          message: 'Недопустимое значение атрибута tabindex',
           element: el.outerHTML.slice(0, 100),
           selector: getSelector(el)
         });
@@ -485,9 +485,9 @@ function checkKeyboardNavigation() {
         const style = window.getComputedStyle(el);
         if (style.pointerEvents !== 'none' && style.display !== 'none') {
           issues.push({
-            type: 'warning',
-            category: 'keyboard',
-            message: 'Interactive element may not be keyboard accessible',
+            type: 'предупреждение',
+            category: 'клавиатура',
+            message: 'Интерактивный элемент может быть недоступен с клавиатуры',
             element: el.outerHTML.slice(0, 100),
             selector: getSelector(el)
           });
@@ -515,9 +515,9 @@ function checkSemanticMarkup() {
       if (!isElementVisible(div)) return;
       
       issues.push({
-        type: 'warning',
-        category: 'semantics',
-        message: 'Using div instead of button for interactive element',
+        type: 'предупреждение',
+        category: 'семантика',
+        message: 'Использование div вместо button для интерактивного элемента',
         element: div.outerHTML.slice(0, 100),
         selector: getSelector(div)
       });
@@ -528,9 +528,9 @@ function checkSemanticMarkup() {
     layoutTables.forEach(table => {
       if (!table.querySelector('th') && !table.getAttribute('summary')) {
         issues.push({
-          type: 'warning',
-          category: 'semantics',
-          message: 'Possible table usage for layout',
+          type: 'предупреждение',
+          category: 'семантика',
+          message: 'Возможное использование таблицы для вёрстки',
           element: table.outerHTML.slice(0, 100),
           selector: getSelector(table)
         });
@@ -556,9 +556,9 @@ function checkLanguage() {
     
     if (!lang) {
       issues.push({
-        type: 'error',
-        category: 'language',
-        message: 'Missing lang attribute on html element',
+        type: 'ошибка',
+        category: 'язык',
+        message: 'У элемента html отсутствует атрибут lang',
         element: html.outerHTML.slice(0, 100),
         selector: 'html'
       });

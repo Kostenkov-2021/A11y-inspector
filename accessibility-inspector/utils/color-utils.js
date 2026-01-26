@@ -92,7 +92,7 @@ static rgbToHex(r, g, b) {
           suggested: this.rgbToString(currentRgb),
           currentRatio: currentRatio,
           suggestedRatio: currentRatio,
-          improvement: 'none'
+          improvement: 'не требуется'
         };
       }
       
@@ -102,11 +102,11 @@ static rgbToHex(r, g, b) {
       if (currentLuminance > backgroundLuminance) {
         // If text is lighter than background - darken
         suggestedRgb = this.findOptimalColor(currentRgb, backgroundRgb, targetRatio, 'darken');
-        improvement = 'darken';
+        improvement = 'сделать темнеее';
       } else {
         // If text is darker than background - lighten
         suggestedRgb = this.findOptimalColor(currentRgb, backgroundRgb, targetRatio, 'lighten');
-        improvement = 'lighten';
+        improvement = 'сделать светлее';
       }
       
       const suggestedRatio = this.calculateContrastRatio(suggestedRgb, backgroundRgb);
@@ -122,7 +122,7 @@ static rgbToHex(r, g, b) {
         score: this.getContrastScore(suggestedRatio)
       };
     } catch (error) {
-      console.error('Error in suggestContrastImprovements:', error);
+      console.error('Ошибка suggestContrastImprovements:', error);
       return {
         current: currentColor,
         suggested: currentColor,

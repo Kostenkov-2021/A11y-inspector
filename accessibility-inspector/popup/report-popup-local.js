@@ -1,5 +1,5 @@
 /*
-    * Использует Marked.js (https://github.com/markedjs/marked)
+    * Uses Marked.js (https://github.com/markedjs/marked)
 */
 
 var currentReport = null;
@@ -328,10 +328,10 @@ function createPairConstructElement(title, value, colorValue){
 
 
 function generateIssue(position, issue){
-    /* Создает развертывающийся виджет для единичной проблемы */
+    /* Creates the expandable widget for a single issue */
     const cnt_category = Object.hasOwn(issue, "category") ? issue.category : "Категория не указана";
     const cnt_element = Object.hasOwn(issue, "element") ? issue.element : null;
-    const cnt_message = (Object.hasOwn(issue, "message") ? issue.message : "Сообщение отсутсвует");
+    const cnt_message = (Object.hasOwn(issue, "message") ? issue.message : "Сообщение отсутствует");
     const cnt_selector = Object.hasOwn(issue, "selector") ? issue.selector : null;
     const cnt_type = Object.hasOwn(issue, "type") ? issue.type : "Не указано";
 
@@ -566,14 +566,14 @@ function init(reportData){
 </head>
 <body id="popup-body-report">
         <header class="summary">
-            <h2 class="sumarry__title">Общее</h1>
+            <h2 class="summary__title">Общее</h1>
             <div class="about__list">
                 <div class="about__list_item">
-                    <strong>Сайт: </strong>
+                    <strong>URL-адрес сайта: </strong>
                     <a id="summary--about--showurl"></a>
                 </div>
                 <div class="about__list_item">
-                    <strong>Дата: </strong>
+                    <strong>Дата проведения тестирования: </strong>
                     <p id="summary--about--showdatetime"></p>
                 </div>
                 <div class="about__list_item">
@@ -594,15 +594,15 @@ function init(reportData){
             <h2>Подробности</h2>
             <div class="issues__controls">
                 <div class="issues__controls__selector">
-                    <label for="selector-by-issues-types">By issue types</label>
+                    <label for="selector-by-issues-types">По типам проблем</label>
                     <select id="selector-by-issues-types">
-                        <option value="null"> -- Not selected --</option>
+                        <option value="null"> -- Не выбрано --</option>
                     </select>
                 </div>
                 <div class="issues__controls__selector">
-                    <label for="selector-by-categorys">By category</label>
+                    <label for="selector-by-categorys">По категориям</label>
                     <select id="selector-by-categorys">
-                        <option value="null"> -- Not selected --</option>
+                        <option value="null"> -- Не выбрано --</option>
                     </select>
                 </div>
                 <div class="issues__controls__buttons">
@@ -679,7 +679,7 @@ function parseReportAsMarkdwon(reportData){
         _report += item.selector ? "**Selector:** " + item.selector + "\n" : "";
         _report += item.element ? "**Element code:**\n```\n" + item.element + "\n```\n" : "";
         if (item.category === "contrast"){
-            _report += "#### Contrast parameters\n\n";
+            _report += "#### Параметры контрастности\n\n";
             _report += "**Score:** " + item.details.suggestions.score + "\n";
             _report += "**Improvement:** " + item.details.suggestions.improvement + "\n\n"
             _report += "##### Background info\n\n"

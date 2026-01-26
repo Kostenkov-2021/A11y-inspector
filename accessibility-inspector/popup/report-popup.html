@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <title>Предпросмотр отчета</title>
+    <title>Предпросмотр отчёта</title>
     <meta charset="utf-8">
     <script src="marked.min.js"></script>
     <meta http-equiv="Content-Security-Policy" 
@@ -10,9 +10,9 @@
 </head>
 <body id="popup-body-report">
     <nav class="menu">
-        <h1>Предпросмотр отчета по доступности сайта</h1>
+        <h1>Предпросмотр отчёта по доступности сайта</h1>
         <div class="menu__download">
-            <label for="selectAsFormatIn">Формат отчета</label>
+            <label for="selectAsFormatIn">Формат отчёта</label>
             <select id="selectAsFormatIn">
                 <option value="html">HTML</option>
                 <option value="json">JSON</option>
@@ -23,14 +23,14 @@
     </nav>
     <div id="report--content--html">
         <header class="summary">
-            <h2 class="sumarry__title">Общее</h1>
+            <h2 class="summary__title">Общее</h1>
             <div class="about__list">
                 <div class="about__list_item">
-                    <strong>Сайт: </strong>
+                    <strong>URL-адрес сайта: </strong>
                     <a id="summary--about--showurl"></a>
                 </div>
                 <div class="about__list_item">
-                    <strong>Дата отчета: </strong>
+                    <strong>Дата проведения тестирования: </strong>
                     <p id="summary--about--showdatetime"></p>
                 </div>
                 <div class="about__list_item">
@@ -51,15 +51,15 @@
             <h2>Подробности</h2>
             <div class="issues__controls">
                 <div class="issues__controls__selector">
-                    <label for="selector-by-issues-types">By issue types</label>
+                    <label for="selector-by-issues-types">По типам проблем</label>
                     <select id="selector-by-issues-types">
-                        <option value="null"> -- Not selected --</option>
+                        <option value="null"> -- Не выбрано --</option>
                     </select>
                 </div>
                 <div class="issues__controls__selector">
-                    <label for="selector-by-categorys">By category</label>
+                    <label for="selector-by-categorys">По категориям</label>
                     <select id="selector-by-categorys">
-                        <option value="null"> -- Not selected --</option>
+                        <option value="null"> -- Не выбрано --</option>
                     </select>
                 </div>
                 <div class="issues__controls__buttons">

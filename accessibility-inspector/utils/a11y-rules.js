@@ -9,24 +9,24 @@ const A11yRules = {
   images: {
     missingAlt: {
       check: (img) => !img.hasAttribute('alt'),
-      message: 'Image missing alt attribute',
-      type: 'error',
-      category: 'images'
+      message: 'У изображения отсутствует атрибут alt',
+      type: 'ошибка',
+      category: 'изображения'
     },
     emptyAlt: {
       check: (img) => img.getAttribute('alt') === '',
-      message: 'Empty alt attribute (decorative image)',
+      message: 'У изображения пустой атрибут alt (декоративное изображение)',
       type: 'warning',
-      category: 'images'
+      category: 'изображения'
     },
     longAlt: {
       check: (img) => {
         const alt = img.getAttribute('alt');
         return alt && alt.length > 125;
       },
-      message: 'Alt attribute too long (over 125 characters)',
-      type: 'warning',
-      category: 'images'
+      message: 'Слишком длинный атрибут Alt (более 125 символов)',
+      type: 'предупреждение',
+      category: 'изображения'
     }
   },
 
@@ -58,9 +58,9 @@ const A11yRules = {
         
         return true;
       },
-      message: 'Form field without associated label',
-      type: 'error',
-      category: 'forms'
+      message: 'У поля формы отсутствует атрибут label',
+      type: 'ошибка',
+      category: 'формы'
     },
     missingFormLabel: {
       check: (form) => {
@@ -70,9 +70,9 @@ const A11yRules = {
         const label = document.querySelector(`label[for="${id}"]`);
         return !label;
       },
-      message: 'Form without label',
-      type: 'warning',
-      category: 'forms'
+      message: 'У формы отсутствует атрибут label',
+      type: 'предупреждение',
+      category: 'формы'
     }
   },
 
@@ -86,9 +86,9 @@ const A11yRules = {
         );
         return skipLinks.length === 0;
       },
-      message: 'Missing skip navigation links',
-      type: 'warning',
-      category: 'navigation'
+      message: 'Отсутствуют ссылки для пропуска навигации и перехода к основному содержимому',
+      type: 'предупреждение',
+      category: 'навигация'
     },
     missingLandmarks: {
       check: () => {
@@ -99,9 +99,9 @@ const A11yRules = {
         );
         return landmarks.length === 0;
       },
-      message: 'Missing semantic landmarks (main, nav, aside, etc.)',
-      type: 'warning',
-      category: 'navigation'
+      message: 'Семантические ориентиры отсутствуют (main, nav, aside и т.д.)',
+      type: 'предупреждение',
+      category: 'навигация'
     }
   },
 
@@ -115,19 +115,19 @@ const A11yRules = {
         
         return !text && !ariaLabel && !title;
       },
-      message: 'Link without text content',
-      type: 'error',
-      category: 'links'
+      message: 'Ссылка без маркировки',
+      type: 'ошибка',
+      category: 'ссылки'
     },
     genericLinkText: {
       check: (link) => {
         const text = link.textContent.trim().toLowerCase();
-        const genericTexts = ['click here', 'read more', 'here', 'link', 'learn more'];
+        const genericTexts = ['нажмите сюда', 'подробнее', 'здесь', 'ссылка', 'узнать больше'];
         return genericTexts.includes(text);
       },
-      message: 'Link with non-informative text',
-      type: 'warning',
-      category: 'links'
+      message: 'Ссылка с неинформативным текстом',
+      type: 'предупреждение',
+      category: 'ссылки'
     }
   },
 
@@ -135,9 +135,9 @@ const A11yRules = {
   headings: {
     missingH1: {
       check: () => document.querySelectorAll('h1').length === 0,
-      message: 'Missing H1 heading',
-      type: 'error',
-      category: 'headings'
+      message: 'Отсутствует заголовок первого уровня H1',
+      type: 'ошибка',
+      category: 'заголовки'
     },
     headingOrder: {
       check: () => {
@@ -156,9 +156,9 @@ const A11yRules = {
         
         return false;
       },
-      message: 'Heading hierarchy violation',
-      type: 'warning',
-      category: 'headings'
+      message: 'Нарушение иерархии заголовков',
+      type: 'предупреждение',
+      category: 'заголовки'
     }
   },
 
@@ -173,18 +173,18 @@ const A11yRules = {
         
         return !text && !ariaLabel && !title && !imgAlt;
       },
-      message: 'Button without text label',
-      type: 'error',
-      category: 'interactive'
+      message: 'Неподписанная кнопка',
+      type: 'ошибка',
+      category: 'интерактивные элементы'
     },
     focusableWithoutIndicator: {
       check: (element) => {
         const style = window.getComputedStyle(element);
         return style.outline === 'none' && style.outlineOffset === '0px';
       },
-      message: 'Focusable element without visual focus indicator',
-      type: 'warning',
-      category: 'interactive'
+      message: 'Фокусируемый элемент без визуального индикатора фокусировки',
+      type: 'предупреждение',
+      category: 'интерактивные элементы'
     }
   }
 };
@@ -320,7 +320,7 @@ const A11yRuleUtils = {
       issues.push(...this.applyRuleToElements(A11yRules.interactive.focusableWithoutIndicator, focusableElements));
       
     } catch (error) {
-      console.error('Error running accessibility checks:', error);
+      console.error('Ошибка при выполнении проверки доступности:', error);
     }
     
     return issues;

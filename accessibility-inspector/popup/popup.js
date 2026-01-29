@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const checkBtn = document.getElementById('check-btn');
   const statusDiv = document.getElementById('status');
   const resultsDiv = document.getElementById('results');
+  // const reportContent = document.getElementById('report-content');
   const downloadBtn = document.getElementById('download-btn');
   const copyBtn = document.getElementById('copy-btn');
   const summaryStats = document.getElementById('summary-stats');
@@ -14,8 +15,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Current report data
   let currentReport = null;
-  let currentFormat = null;
-
 
   // Initialize popup
   init();
@@ -30,14 +29,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load saved data
     loadSavedData();
 
-    // Подставляем текущий URL-адрес автоматически
+    // Подставляем текущий URL автоматически
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (tabs.length > 0 && tabs[0].url.startsWith('http')) {
         urlInput.value = tabs[0].url;
       }
     });
 
-    // Установка фокуса на поле ввода URL
+    // Set focus to URL input
     urlInput.focus();
   }
 
@@ -66,20 +65,20 @@ document.addEventListener('DOMContentLoaded', function() {
     const format = formatSelect.value;
 
     if (!url) {
-      showStatus('Пожалуйста, введите URL-адрес для проверки доступности', 'error');
+      showStatus('Пожалуйста, введите URL-адрес для проверки', 'error');
       urlInput.focus();
       return;
     }
 
     if (!isValidUrl(url)) {
-      showStatus('Пожалуйста, введите действительный URL-адрес (http:// или https://)', 'error');
+      showStatus('Пожалуйста, введите действительный URL-адрес (http:// or https://)', 'error');
       urlInput.focus();
       return;
     }
 
     saveCurrentData();
     setLoadingState(true);
-    showStatus('Идёт проверка доступности...', 'загрузка');
+    showStatus('Идёт проверка доступности...', 'loading');
     hideResults();
 
     chrome.runtime.sendMessage(
@@ -92,12 +91,12 @@ document.addEventListener('DOMContentLoaded', function() {
     setLoadingState(false);
 
     if (chrome.runtime.lastError) {
-      showStatus(`Ошибка: ${chrome.runtime.lastError.message}`, 'error');
+      showStatus(`Error: ${chrome.runtime.lastError.message}`, 'error');
       return;
     }
 
     if (response?.error) {
-      showStatus(`Ошибка проверки: ${response.error}`, 'error');
+      showStatus(`Check error: ${response.error}`, 'error');
       return;
     }
 
@@ -127,13 +126,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function displayResults(report, format) {
     displaySummaryStats(report, format);
+    // displayReportContent(report, format);
     resultsDiv.classList.remove('hidden');
+    // resultsDiv.scrollIntoView({ behavior: 'smooth' });
   }
 
   function displaySummaryStats(reportData, format) {
     try {
       let summary;
-      if (format === 'html'){
+      if (format == 'html'){
         const doc = (new DOMParser()).parseFromString(reportData, 'text/html');
         const totalIssuesElement = doc.getElementsByClassName('total')[0];
         const errorsElement = doc.getElementsByClassName('errors')[0];
@@ -145,7 +146,7 @@ document.addEventListener('DOMContentLoaded', function() {
             warnings: warningsElement.textContent.trim()
           };
         } else {
-          summary = { total: 0, errors: 0, warnings: 0 };
+          summary = { total: 1, errors: 2, warnings: 3 };
         }
         
       } else if (typeof reportData === 'object' && reportData.summary) {
@@ -166,19 +167,19 @@ document.addEventListener('DOMContentLoaded', function() {
       summaryStats.innerHTML = `
         <div class="stat-item">
           <span class="stat-number total">${summary.total}</span>
-          <span class="stat-label">всего</span>
+          <span class="stat-label">total issues</span>
         </div>
         <div class="stat-item">
           <span class="stat-number errors">${summary.errors}</span>
-          <span class="stat-label">ошибки</span>
+          <span class="stat-label">errors</span>
         </div>
         <div class="stat-item">
           <span class="stat-number warnings">${summary.warnings}</span>
-          <span class="stat-label">предупреждения</span>
+          <span class="stat-label">warnings</span>
         </div>
       `;
     } catch {
-      summaryStats.innerHTML = '<p>Ошибка загрузки статистики</p>';
+      summaryStats.innerHTML = '<p>Error loading statistics</p>';
     }
   }
 
@@ -197,7 +198,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       reportContent.innerHTML = content;
     } catch (error) {
-      reportContent.innerHTML = `<p>Ошибка формата отчёта: ${error.message}</p>`;
+      reportContent.innerHTML = `<p>Report formatting error: ${error.message}</p>`;
     }
   }
 
@@ -210,14 +211,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const issues = reportData.issues || [];
     let html = `
       <div class="report-header">
-        <h4>Отчёт о проверке доступности</h4>
-        <p><strong>URL-адрес сайта:</strong> ${reportData.url || 'Неизвестно'}</p>
+        <h4>Отчет доступности</h4>
+        <p><strong>URL:</strong> ${reportData.url || 'Неизвестно'}</p>
         <p><strong>Время проверки:</strong> ${reportData.timestamp || 'Неизвестно'}</p>
       </div>
     `;
 
     if (issues.length === 0) {
-      html += '<p class="no-issues">Проблемы доступности не найдены!</p>';
+      html += '<p class="no-issues">Проблемы доступности не найдены! ✅</p>';
     } else {
       html += '<div class="issues-list">';
       issues.forEach((issue, index) => {
@@ -225,8 +226,8 @@ document.addEventListener('DOMContentLoaded', function() {
         html += `
           <div class="issue-item ${typeClass}">
             <div class="issue-header">
-              <span class="issue-type">${typeClass === 'error' ? 'Ошибка' : 'Предупреждение'}</span>
-              <span class="issue-category">${issue.category || 'неизвестно'}</span>
+              <span class="issue-type">${typeClass === 'error' ? '❌ Ошибка' : '⚠️ Предупреждение'}</span>
+              <span class="issue-category">${issue.category || 'unknown'}</span>
             </div>
             <div class="issue-message">${issue.message || 'Нет описания'}</div>
             ${issue.selector ? `<div class="issue-selector"><strong>Селектор:</strong> ${issue.selector}</div>` : ''}
@@ -242,13 +243,13 @@ document.addEventListener('DOMContentLoaded', function() {
   function formatAsText(reportData) {
     const report = typeof reportData === 'string' ? JSON.parse(reportData) : reportData;
     const issues = report.issues || [];
-    let text = `Отчёт о проверке доступности\nURL-адрес сайта: ${report.url || 'Неизвестно'}\nВремя проверки: ${report.timestamp || 'Неизвестно'}\n\n`;
+    let text = `Отчет доступности\nURL: ${report.url || 'Неизвестно'}\nВремя проверки: ${report.timestamp || 'Неизвестно'}\n\n`;
     if (issues.length === 0) text += 'Проблемы доступности не найдены! ✅\n';
     else {
       text += `Найдено проблем: ${issues.length}\n\n`;
       issues.forEach((issue, index) => {
         const typeLabel = issue.type === 'error' ? 'ОШИБКА' : 'ПРЕДУПРЕЖДЕНИЕ';
-        text += `${index + 1}. [${typeLabel}] ${issue.category || 'неизвестно'}\n`;
+        text += `${index + 1}. [${typeLabel}] ${issue.category || 'unknown'}\n`;
         text += `   Сообщение: ${issue.message || 'Нет описания'}\n`;
         if (issue.selector) text += `   Селектор: ${issue.selector}\n`;
         text += '\n';
@@ -258,26 +259,26 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function formatAsMarkdown(data) {
-        let _report = "# Отчёт о проверке доступности\n";
+        let _report = "# Отчет по доступности сайта\n";
     _report += "## Сводка\n\n";
-    _report += "**URL-адрес сайта:** " + data.url + "\n";
-    _report += "**Время проверки:** " + data.timestamp + "\n";
+    _report += "**Сайт:** " + data.url + "\n";
+    _report += "**Время:** " + data.timestamp + "\n";
     _report += "**Всего проблем:** " + data.summary.total + "\n";
     _report += "**Предупреждений:** " + data.summary.warnings + "\n";
     _report += "**Ошибок:** " + data.summary.errors + "\n\n";
     _report += "## Детализация ошибок \n";
     data.issues.forEach((item, i) => {
-        _report += "### **Проблема:** " + i + "\n\n";
-        _report += "**Тип:** " + item.type + "\n";
-        _report += "**Категория**" + item.category + "\n"
-        _report += "**Сообщение:** " + item.message + "\n";
-        _report += item.selector ? "**Селектор:** " + item.selector + "\n" : "";
-        _report += item.element ? "**Код элемента:**\n```\n" + item.element + "\n```\n" : "";
+        _report += "### **Issue:** " + i + "\n\n";
+        _report += "**Type:** " + item.type + "\n";
+        _report += "**Category**" + item.category + "\n"
+        _report += "**Message:** " + item.message + "\n";
+        _report += item.selector ? "**Selector:** " + item.selector + "\n" : "";
+        _report += item.element ? "**Element code:**\n```\n" + item.element + "\n```\n" : "";
         if (item.category === "contrast"){
-            _report += "#### Параметры контрастности\n\n";
-            _report += "**Результат:** " + item.details.suggestions.score + "\n";
-            _report += "**Улучшение:** " + item.details.suggestions.improvement + "\n\n"
-            _report += "##### Фон\n\n"
+            _report += "#### Contrast parameters\n\n";
+            _report += "**Score:** " + item.details.suggestions.score + "\n";
+            _report += "**Improvement:** " + item.details.suggestions.improvement + "\n\n"
+            _report += "##### Background info\n\n"
             _report += "**backgroundColor:** " + item.details.backgroundColor + "\n";
             _report += "**fontSize:** " + item.details.fontSize + "\n";
             _report += "**fontWeight:** " + item.details.fontWeight + "\n";
@@ -285,12 +286,12 @@ document.addEventListener('DOMContentLoaded', function() {
             _report += "**requiredRatio:** " + item.details.requiredRatio + "\n";
             _report += "**textColor:** " + item.details.textColor + "\n";
             _report += "##### Top element info\n\n";
-            _report += "**Цвет:**\n";
+            _report += "**Color:**\n";
             _report += " - **RGB:** " + item.details.suggestions.current + "\n";
             _report += " - **HEX:** " + item.details.suggestions.currentHex + "\n\n";
             _report += "**Ratio:** " + item.details.suggestions.currentRatio + "\n";
             _report += "##### Top element suggestions\n\n";
-            _report += "**Рекомендуемый цвет:** \n";
+            _report += "**Suggested color:** \n";
             _report += " - **RGB:** " + item.details.suggestions.suggested + "\n";
             _report += " - **HEX:** " + item.details.suggestions.suggestedHex + "\n\n";
             _report += "**Ratio:** " + item.details.suggestions.suggestedRatio + "\n";
@@ -322,7 +323,7 @@ document.addEventListener('DOMContentLoaded', function() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      showStatus('Отчёт скачан успешно', 'success');
+      showStatus('Отчет скачан успешно', 'success');
     } catch (error) { showStatus(`Ошибка скачивания: ${error.message}`, 'error'); }
   }
 
@@ -338,18 +339,18 @@ document.addEventListener('DOMContentLoaded', function() {
         case 'json': default: content = typeof currentReport === 'string' ? currentReport : JSON.stringify(currentReport, null, 2); break;
       }
       await navigator.clipboard.writeText(content);
-      showStatus('Отчёт скопирован в буфер обмена', 'success');
-    } catch (error) { showStatus(`Ошибка копирования отчёта: ${error.message}`, 'error'); }
+      showStatus('Отчет скопирован в буфер обмена', 'success');
+    } catch (error) { showStatus(`Ошибка копирования: ${error.message}`, 'error'); }
   }
 
   function setLoadingState(isLoading) {
     if (isLoading) {
       checkBtn.disabled = true;
-      buttonText.textContent = 'Идёт проверка...';
+      buttonText.textContent = 'Checking...';
       loadingSpinner.classList.remove('hidden');
     } else {
       checkBtn.disabled = false;
-      buttonText.textContent = 'Проверить доступность';
+      buttonText.textContent = 'Check Accessibility';
       loadingSpinner.classList.add('hidden');
     }
   }

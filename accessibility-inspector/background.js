@@ -21,16 +21,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 async function handleAccessibilityCheck(url, format) {
   // Check if scripting API is available
   if (!chrome.scripting) {
-    throw new Error('Scripting API is not available. Check manifest permissions.');
+    throw new Error('API scripting недоступен. Проверьте разрешения в manifest.json.');
   }
 
   let tab;
   try {
-    console.log('Creating tab for URL:', url);
+    console.log('Создание вкладки для URL:', url);
     
     // Validate URL format
     if (!isValidHttpUrl(url)) {
-      throw new Error('Invalid URL format. Please use http:// or https://');
+      throw new Error('Недопустимый формат URL. Используйте http:// или https://');
     }
 
     // Create a new tab for checking
@@ -39,7 +39,7 @@ async function handleAccessibilityCheck(url, format) {
     // Wait for the page to load completely
     await waitForTabLoad(tab.id);
 
-    console.log('Page loaded, injecting content scripts...');
+    console.log('Страница загружена, внедряются сценарии...');
 
     // Inject all necessary content scripts
     await chrome.scripting.executeScript({
@@ -52,12 +52,12 @@ async function handleAccessibilityCheck(url, format) {
       ]
     });
 
-    console.log('Content scripts injected, waiting for initialization...');
+    console.log('Сценарии внедрены, ожидание инициализации...');
 
     // Wait for content script to be ready
     await waitForContentScript(tab.id);
 
-    console.log('Content script ready, executing checks...');
+    console.log('Сценарий страницы готов, выполняются проверки...');
 
     // Execute accessibility checks and get raw data
     const results = await chrome.scripting.executeScript({
@@ -66,21 +66,21 @@ async function handleAccessibilityCheck(url, format) {
     });
 
     if (!results || !results[0] || !results[0].result) {
-      throw new Error('No results returned from accessibility check');
+      throw new Error('Проверка доступности не вернула результатов');
     }
 
     const checkResult = results[0].result;
     
     // Validate the result structure
     if (typeof checkResult === 'string' && checkResult.includes('Error:')) {
-      throw new Error(`Content script error: ${checkResult}`);
+      throw new Error(`Ошибка сценария страницы: ${checkResult}`);
     }
 
     if (!checkResult.issues || !checkResult.summary) {
-      throw new Error('Invalid data structure from accessibility check');
+      throw new Error('Проверка доступности вернула данные в недопустимом формате');
     }
 
-    console.log('Accessibility check completed, generating report...');
+    console.log('Проверка доступности завершена, формируется отчёт...');
 
     // Generate the report using ReportGenerator from content script
     const reportResults = await chrome.scripting.executeScript({
@@ -90,7 +90,7 @@ async function handleAccessibilityCheck(url, format) {
     });
 
     if (!reportResults || !reportResults[0] || !reportResults[0].result) {
-      throw new Error('Failed to generate report');
+      throw new Error('Не удалось сформировать отчёт');
     }
 
     const report = reportResults[0].result;
@@ -105,23 +105,23 @@ async function handleAccessibilityCheck(url, format) {
             report.includes('</html>')
         )
     ) {
-        throw new Error('Received HTML instead of accessibility report. The URL might be inaccessible.');
+        throw new Error('Вместо отчёта о доступности получен HTML. Возможно, URL недоступен.');
     }
 
     return { report, format };
 
 
   } catch (error) {
-    console.error('Error in handleAccessibilityCheck:', error);
-    throw new Error(`Failed to check website: ${error.message}`);
+    console.error('Ошибка в handleAccessibilityCheck:', error);
+    throw new Error(`Не удалось проверить сайт: ${error.message}`);
   } finally {
     // Always close the checking tab
     if (tab?.id) {
       try {
         await chrome.tabs.remove(tab.id);
-        console.log('Checking tab closed');
+        console.log('Вкладка проверки закрыта');
       } catch (e) {
-        console.warn('Failed to close tab:', e.message);
+        console.warn('Не удалось закрыть вкладку:', e.message);
       }
     }
   }
@@ -135,14 +135,14 @@ function waitForTabLoad(tabId) {
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
       chrome.tabs.onUpdated.removeListener(listener);
-      reject(new Error('Page load timeout (30 seconds)'));
+      reject(new Error('Время загрузки страницы истекло (30 секунд)'));
     }, 30000);
 
     function listener(updatedTabId, info) {
       if (updatedTabId === tabId && info.status === 'complete') {
         clearTimeout(timeout);
         chrome.tabs.onUpdated.removeListener(listener);
-        console.log('Tab loaded completely');
+        console.log('Вкладка полностью загружена');
         resolve();
       }
     }
@@ -167,7 +167,7 @@ function waitForTabLoad(tabId) {
 function waitForContentScript(tabId) {
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
-      reject(new Error('Content script failed to load (10 seconds)'));
+      reject(new Error('Сценарий страницы не загрузился (10 секунд)'));
     }, 10000);
 
     let attempts = 0;
@@ -196,13 +196,13 @@ function waitForContentScript(tabId) {
             dependencies.hasReportGenerator &&
             dependencies.isReady) {
           clearTimeout(timeout);
-          console.log('All content scripts loaded successfully');
+          console.log('Все сценарии страницы успешно загружены');
           resolve();
         } else {
-          console.log('Waiting for dependencies:', dependencies);
+          console.log('Ожидание зависимостей:', dependencies);
           if (attempts >= maxAttempts) {
             clearTimeout(timeout);
-            reject(new Error(`Content script dependencies not loaded after maximum attempts. Status: ${JSON.stringify(dependencies)}`));
+            reject(new Error(`Зависимости сценария страницы не загрузились после максимального числа попыток. Статус: ${JSON.stringify(dependencies)}`));
           } else {
             setTimeout(checkScript, 200);
           }
@@ -210,7 +210,7 @@ function waitForContentScript(tabId) {
       } catch (error) {
         if (attempts >= maxAttempts) {
           clearTimeout(timeout);
-          reject(new Error(`Failed to check content script: ${error.message}`));
+          reject(new Error(`Не удалось проверить сценарий страницы: ${error.message}`));
         } else {
           setTimeout(checkScript, 200);
         }
@@ -229,10 +229,10 @@ function performAccessibilityCheck() {
     if (typeof runA11yChecks === 'function') {
       return runA11yChecks();
     } else {
-      throw new Error('runA11yChecks function not found');
+      throw new Error('Функция runA11yChecks не найдена');
     }
   } catch (error) {
-    console.error('Error in performAccessibilityCheck:', error);
+    console.error('Ошибка в performAccessibilityCheck:', error);
     return {
       error: error.message,
       issues: [],
@@ -249,14 +249,14 @@ function performAccessibilityCheck() {
 function generateReportInContentScript(data, format) {
   try {
     if (typeof ReportGenerator === 'undefined') {
-      throw new Error('ReportGenerator not available');
+      throw new Error('ReportGenerator недоступен');
     }
     
     const generator = new ReportGenerator();
     return generator.generate(data, format);
   } catch (error) {
-    console.error('Error generating report in content script:', error);
-    return `Error generating report: ${error.message}`;
+    console.error('Ошибка формирования отчёта в сценарии страницы:', error);
+    return `Ошибка формирования отчёта: ${error.message}`;
   }
 }
 

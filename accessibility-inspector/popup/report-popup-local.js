@@ -328,10 +328,10 @@ function createPairConstructElement(title, value, colorValue){
 
 
 function generateIssue(position, issue){
-    /* Создает развертывающийся виджет для единичной проблемы */
+    /* Создаёт развёртывающийся виджет для единичной проблемы */
     const cnt_category = Object.hasOwn(issue, "category") ? issue.category : "Категория не указана";
     const cnt_element = Object.hasOwn(issue, "element") ? issue.element : null;
-    const cnt_message = (Object.hasOwn(issue, "message") ? issue.message : "Сообщение отсутсвует");
+    const cnt_message = (Object.hasOwn(issue, "message") ? issue.message : "Сообщение отсутствует");
     const cnt_selector = Object.hasOwn(issue, "selector") ? issue.selector : null;
     const cnt_type = Object.hasOwn(issue, "type") ? issue.type : "Не указано";
 
@@ -356,9 +356,9 @@ function generateIssue(position, issue){
     let summary_container = document.createElement("span");
     summary_container.classList.add("issues__list__details__title");
     let category_span = document.createElement("h3");
-    category_span.innerHTML = "Issue: " + position + " > <strong>Category</strong>: " + cnt_category;
+    category_span.innerHTML = "Проблема: " + (position + 1) + " > <strong>Категория</strong>: " + translateCategory(cnt_category);
     let span_issue_type = document.createElement("span");
-    span_issue_type.innerText = cnt_type;
+    span_issue_type.innerText = translateIssueType(cnt_type);
     summary_container.appendChild(category_span);
     summary_container.appendChild(span_issue_type);
     summary.appendChild(summary_container);
@@ -367,12 +367,12 @@ function generateIssue(position, issue){
     let details_contained = document.createElement("div");
 
     if (cnt_selector){
-        details_contained.appendChild(createPairConstructElement("Selector", cnt_selector));
+        details_contained.appendChild(createPairConstructElement("Селектор", cnt_selector));
     }
 
     details_contained.classList.add("issues__list__details__container");
     let p_message_title = document.createElement("strong");
-    p_message_title.innerText = "Message:";
+    p_message_title.innerText = "Сообщение:";
     details_contained.appendChild(p_message_title);
     let p_message_text = document.createElement("p")
     p_message_text.innerText = cnt_message;
@@ -380,7 +380,7 @@ function generateIssue(position, issue){
     
     if (cnt_element){
         let label_for_element_code = document.createElement("p");
-        label_for_element_code.innerHTML = "<strong>Element code</strong>:";
+        label_for_element_code.innerHTML = "<strong>Код элемента</strong>:";
         details_contained.appendChild(label_for_element_code);
         let element_code = document.createElement("code");
         element_code.classList.add("issues__list__details__code");
@@ -393,31 +393,31 @@ function generateIssue(position, issue){
         let hrAfterCode = document.createElement("hr");
         hrAfterCode.style = "width: -webkit-fill-available;";
         details_contained.appendChild(hrAfterCode);
-        details_contained.appendChild(createPairConstructElement("Contrast parameters"));
+        details_contained.appendChild(createPairConstructElement("Параметры контраста"));
 
         let contrastParametersContainer = document.createElement("div");
         contrastParametersContainer.style = "margin-left: .7rem;"
 
         contrastParametersContainer.appendChild(createPairConstructElement(
-            "Score", issue.details.suggestions.score
+            "Оценка", translateContrastScore(issue.details.suggestions.score)
         ));
 
-        contrastParametersContainer.appendChild(createPairConstructElement("Background element:"));
+        contrastParametersContainer.appendChild(createPairConstructElement("Фон элемента:"));
 
         let listBackColorShowed = document.createElement("ul");
         [
             createPairConstructElement(
-                "backroundColor", issue.details.backgroundColor, issue.details.backgroundColor),
+                "Цвет фона", issue.details.backgroundColor, issue.details.backgroundColor),
             createPairConstructElement(
-                "textColor", issue.details.textColor, issue.details.textColor),
+                "Цвет текста", issue.details.textColor, issue.details.textColor),
             createPairConstructElement(
-                "fontSize", issue.details.fontSize),
+                "Размер шрифта", issue.details.fontSize),
             createPairConstructElement(
-                "fontWeight", issue.details.fontWeight),
+                "Насыщенность шрифта", issue.details.fontWeight),
             createPairConstructElement(
-                "ratio", issue.details.ratio),
+                "Контраст", issue.details.ratio),
             createPairConstructElement(
-                "requiredRatio", issue.details.requiredRatio)
+                "Требуемый контраст", issue.details.requiredRatio)
         ].forEach(item => {
             let itemShowed = document.createElement("li");
             itemShowed.appendChild(item);
@@ -429,27 +429,27 @@ function generateIssue(position, issue){
         
 
         if (issue.details.suggestions){
-            contrastParametersContainer.appendChild(createPairConstructElement("Suggestions:"));
+            contrastParametersContainer.appendChild(createPairConstructElement("Рекомендации:"));
 
             let suggestionDiv = document.createElement("div");
             suggestionDiv.style = "margin-left: 1rem;"
             suggestionDiv.appendChild(
                 createPairConstructElement(
-                    "Improvement", issue.details.suggestions.improvement))
+                    "Улучшение", translateImprovement(issue.details.suggestions.improvement)))
             suggestionDiv.appendChild(document.createElement("hr"));
             suggestionDiv.appendChild(
                 createPairConstructElement(
-                    "Current color", issue.details.suggestions.current, issue.details.suggestions.current))
+                    "Текущий цвет", issue.details.suggestions.current, issue.details.suggestions.current))
             suggestionDiv.appendChild(
                 createPairConstructElement(
-                    "Suggestion color", issue.details.suggestions.suggested, issue.details.suggestions.suggested))
+                    "Предлагаемый цвет", issue.details.suggestions.suggested, issue.details.suggestions.suggested))
             suggestionDiv.appendChild(document.createElement("hr"));
             suggestionDiv.appendChild(
                 createPairConstructElement(
-                    "Current ratio", issue.details.suggestions.currentRatio))
+                    "Текущий контраст", issue.details.suggestions.currentRatio))
             suggestionDiv.appendChild(
                 createPairConstructElement(
-                    "Suggestion ratio", issue.details.suggestions.suggestedRatio))
+                    "Предлагаемый контраст", issue.details.suggestions.suggestedRatio))
             contrastParametersContainer.appendChild(suggestionDiv);
         }
     }
@@ -472,14 +472,14 @@ function initSelectorsForSorting(issuesElements){
     let issueTypes = new Set([...issuesElements].map((item) => item.getAttribute("data-issue-type")));
     issueTypes.forEach((item, i) => {
         let opt = document.createElement("option");
-        opt.innerText = item;
+        opt.innerText = translateIssueType(item);
         opt.value = item;
         selectorByIssuesTypes.appendChild(opt);
     });
     let categoryTypes = new Set([...issuesElements].map((item) => item.getAttribute("data-category")));
     categoryTypes.forEach((item, i) => {
         let opt = document.createElement("option");
-        opt.innerText = item;
+        opt.innerText = translateCategory(item);
         opt.value = item;
         selectorByCategories.appendChild(opt);
     });
@@ -509,7 +509,7 @@ function init(reportData){
         item.addEventListener("click", function() {
             setTimeout(() => {
                 isAllIssuesElementsExpanded = checkIsAllExpandedElements(issuesElements);
-                btnExpandIssues.innerText = isAllIssuesElementsExpanded ? "Expand all" : "Hide All";
+                btnExpandIssues.innerText = isAllIssuesElementsExpanded ? "Развернуть всё" : "Свернуть всё";
             }, 5)
             
         })
@@ -544,15 +544,45 @@ function init(reportData){
             item.classList.remove("hidden");
         })
         selectorByCategories.value = "null";
-        selectorByIssueTypes.value = "null";
+        selectorByIssuesTypes.value = "null";
     });
     btnExpandIssues.addEventListener("click", function() {
         [...issuesElements].forEach(item => {
             item.toggleAttribute("open", isAllIssuesElementsExpanded);
         });
         isAllIssuesElementsExpanded = !isAllIssuesElementsExpanded;
-        btnExpandIssues.innerText = isAllIssuesElementsExpanded ? "Expand all" : "Hide All";
+        btnExpandIssues.innerText = isAllIssuesElementsExpanded ? "Развернуть всё" : "Свернуть всё";
     });   
+}
+
+function translateIssueType(type) {
+    return ({ error: "ошибка", warning: "предупреждение" })[type] || (type || "не указано");
+}
+
+function translateCategory(category) {
+    return ({
+        images: "изображения",
+        language: "язык страницы",
+        headings: "заголовки",
+        forms: "формы",
+        contrast: "контраст",
+        aria: "ARIA",
+        keyboard: "клавиатура",
+        semantics: "семантика",
+        navigation: "навигация",
+        links: "ссылки",
+        interactive: "интерактивные элементы",
+        system: "система",
+        general: "общее"
+    })[category] || (category || "неизвестно");
+}
+
+function translateImprovement(improvement) {
+    return ({ none: "не требуется", darken: "сделать темнее", lighten: "сделать светлее", error: "ошибка" })[improvement] || (improvement || "не указано");
+}
+
+function translateContrastScore(score) {
+    return score === "Fail" ? "Не соответствует" : (score || "не указано");
 }
     `;
     
@@ -594,15 +624,15 @@ function init(reportData){
             <h2>Подробности</h2>
             <div class="issues__controls">
                 <div class="issues__controls__selector">
-                    <label for="selector-by-issues-types">By issue types</label>
+                    <label for="selector-by-issues-types">По типу проблемы</label>
                     <select id="selector-by-issues-types">
-                        <option value="null"> -- Not selected --</option>
+                        <option value="null"> -- Не выбрано --</option>
                     </select>
                 </div>
                 <div class="issues__controls__selector">
-                    <label for="selector-by-categorys">By category</label>
+                    <label for="selector-by-categorys">По категории</label>
                     <select id="selector-by-categorys">
-                        <option value="null"> -- Not selected --</option>
+                        <option value="null"> -- Не выбрано --</option>
                     </select>
                 </div>
                 <div class="issues__controls__buttons">
@@ -624,6 +654,36 @@ function init(reportData){
     const date = (new Date(reportData.timestamp)).toLocaleString('ru-RU');
     const formatter = date.replace(".", '_').replace(".", '_').replace(" ", '_').replace(",", "_").replace(":", "_"); 
     downloadFile(pageWithHTML, "report_" + formatter + ".html");
+}
+
+function translateIssueType(type) {
+    return ({ error: "ошибка", warning: "предупреждение" })[type] || (type || "не указано");
+}
+
+function translateCategory(category) {
+    return ({
+        images: "изображения",
+        language: "язык страницы",
+        headings: "заголовки",
+        forms: "формы",
+        contrast: "контраст",
+        aria: "ARIA",
+        keyboard: "клавиатура",
+        semantics: "семантика",
+        navigation: "навигация",
+        links: "ссылки",
+        interactive: "интерактивные элементы",
+        system: "система",
+        general: "общее"
+    })[category] || (category || "неизвестно");
+}
+
+function translateImprovement(improvement) {
+    return ({ none: "не требуется", darken: "сделать темнее", lighten: "сделать светлее", error: "ошибка" })[improvement] || (improvement || "не указано");
+}
+
+function translateContrastScore(score) {
+    return score === "Fail" ? "Не соответствует" : (score || "не указано");
 }
 
 function downloadAsJSON(reportData){
@@ -663,7 +723,7 @@ marked.setOptions({
 
 
 function parseReportAsMarkdwon(reportData){
-    let _report = "# Отчет по доступности сайта\n";
+    let _report = "# Отчёт о доступности сайта\n";
     _report += "## Сводка\n\n";
     _report += "**Сайт:** " + reportData.url + "\n";
     _report += "**Время:** " + reportData.timestamp + "\n";
@@ -672,33 +732,33 @@ function parseReportAsMarkdwon(reportData){
     _report += "**Ошибок:** " + reportData.summary.errors + "\n\n";
     _report += "## Детализация ошибок \n";
     reportData.issues.forEach((item, i) => {
-        _report += "### **Issue:** " + i + "\n\n";
-        _report += "**Type:** " + item.type + "\n";
-        _report += "**Category**" + item.category + "\n"
-        _report += "**Message:** " + item.message + "\n";
-        _report += item.selector ? "**Selector:** " + item.selector + "\n" : "";
-        _report += item.element ? "**Element code:**\n```\n" + item.element + "\n```\n" : "";
+        _report += "### **Проблема:** " + (i + 1) + "\n\n";
+        _report += "**Тип:** " + translateIssueType(item.type) + "\n";
+        _report += "**Категория:** " + translateCategory(item.category) + "\n"
+        _report += "**Сообщение:** " + item.message + "\n";
+        _report += item.selector ? "**Селектор:** " + item.selector + "\n" : "";
+        _report += item.element ? "**Код элемента:**\n```\n" + item.element + "\n```\n" : "";
         if (item.category === "contrast"){
-            _report += "#### Contrast parameters\n\n";
-            _report += "**Score:** " + item.details.suggestions.score + "\n";
-            _report += "**Improvement:** " + item.details.suggestions.improvement + "\n\n"
-            _report += "##### Background info\n\n"
-            _report += "**backgroundColor:** " + item.details.backgroundColor + "\n";
-            _report += "**fontSize:** " + item.details.fontSize + "\n";
-            _report += "**fontWeight:** " + item.details.fontWeight + "\n";
-            _report += "**ratio:** " + item.details.ratio + "\n";
-            _report += "**requiredRatio:** " + item.details.requiredRatio + "\n";
-            _report += "**textColor:** " + item.details.textColor + "\n";
-            _report += "##### Top element info\n\n";
-            _report += "**Color:**\n";
+            _report += "#### Параметры контраста\n\n";
+            _report += "**Оценка:** " + translateContrastScore(item.details.suggestions.score) + "\n";
+            _report += "**Улучшение:** " + translateImprovement(item.details.suggestions.improvement) + "\n\n"
+            _report += "##### Информация о фоне\n\n"
+            _report += "**Цвет фона:** " + item.details.backgroundColor + "\n";
+            _report += "**Размер шрифта:** " + item.details.fontSize + "\n";
+            _report += "**Насыщенность шрифта:** " + item.details.fontWeight + "\n";
+            _report += "**Контраст:** " + item.details.ratio + "\n";
+            _report += "**Требуемый контраст:** " + item.details.requiredRatio + "\n";
+            _report += "**Цвет текста:** " + item.details.textColor + "\n";
+            _report += "##### Текущий цвет\n\n";
+            _report += "**Цвет:**\n";
             _report += " - **RGB:** " + item.details.suggestions.current + "\n";
             _report += " - **HEX:** " + item.details.suggestions.currentHex + "\n\n";
-            _report += "**Ratio:** " + item.details.suggestions.currentRatio + "\n";
-            _report += "##### Top element suggestions\n\n";
-            _report += "**Suggested color:** \n";
+            _report += "**Контраст:** " + item.details.suggestions.currentRatio + "\n";
+            _report += "##### Рекомендации\n\n";
+            _report += "**Предлагаемый цвет:** \n";
             _report += " - **RGB:** " + item.details.suggestions.suggested + "\n";
             _report += " - **HEX:** " + item.details.suggestions.suggestedHex + "\n\n";
-            _report += "**Ratio:** " + item.details.suggestions.suggestedRatio + "\n";
+            _report += "**Контраст:** " + item.details.suggestions.suggestedRatio + "\n";
         }
         _report += "\n------------\n";
     });

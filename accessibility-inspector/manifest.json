@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Accessibility Inspector",
+  "name": "Инспектор доступности",
   "version": "1.0",
-  "description": "This extension allows you to check the accessibility of websites",
+  "description": "Расширение для проверки доступности сайтов",
   "permissions": [
     "activeTab",
     "storage",
@@ -18,7 +18,7 @@
   },
   "action": {
     "default_popup": "popup/popup.html",
-    "default_title": "Website Accessibility Check"
+    "default_title": "Проверка доступности сайта"
   },
   "content_scripts": [
     {

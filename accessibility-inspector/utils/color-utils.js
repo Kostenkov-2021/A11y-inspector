@@ -122,7 +122,7 @@ static rgbToHex(r, g, b) {
         score: this.getContrastScore(suggestedRatio)
       };
     } catch (error) {
-      console.error('Error in suggestContrastImprovements:', error);
+      console.error('Ошибка в suggestContrastImprovements:', error);
       return {
         current: currentColor,
         suggested: currentColor,

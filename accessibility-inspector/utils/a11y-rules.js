@@ -9,13 +9,13 @@ const A11yRules = {
   images: {
     missingAlt: {
       check: (img) => !img.hasAttribute('alt'),
-      message: 'Image missing alt attribute',
+      message: 'У изображения отсутствует атрибут alt',
       type: 'error',
       category: 'images'
     },
     emptyAlt: {
       check: (img) => img.getAttribute('alt') === '',
-      message: 'Empty alt attribute (decorative image)',
+      message: 'Пустой атрибут alt (декоративное изображение)',
       type: 'warning',
       category: 'images'
     },
@@ -24,7 +24,7 @@ const A11yRules = {
         const alt = img.getAttribute('alt');
         return alt && alt.length > 125;
       },
-      message: 'Alt attribute too long (over 125 characters)',
+      message: 'Атрибут alt слишком длинный (более 125 символов)',
       type: 'warning',
       category: 'images'
     }
@@ -58,7 +58,7 @@ const A11yRules = {
         
         return true;
       },
-      message: 'Form field without associated label',
+      message: 'Поле формы без связанной подписи',
       type: 'error',
       category: 'forms'
     },
@@ -70,7 +70,7 @@ const A11yRules = {
         const label = document.querySelector(`label[for="${id}"]`);
         return !label;
       },
-      message: 'Form without label',
+      message: 'Форма без подписи',
       type: 'warning',
       category: 'forms'
     }
@@ -86,7 +86,7 @@ const A11yRules = {
         );
         return skipLinks.length === 0;
       },
-      message: 'Missing skip navigation links',
+      message: 'Отсутствуют ссылки для пропуска навигации',
       type: 'warning',
       category: 'navigation'
     },
@@ -99,7 +99,7 @@ const A11yRules = {
         );
         return landmarks.length === 0;
       },
-      message: 'Missing semantic landmarks (main, nav, aside, etc.)',
+      message: 'Отсутствуют семантические ориентиры (main, nav, aside и т. д.)',
       type: 'warning',
       category: 'navigation'
     }
@@ -115,7 +115,7 @@ const A11yRules = {
         
         return !text && !ariaLabel && !title;
       },
-      message: 'Link without text content',
+      message: 'Ссылка без текстового содержимого',
       type: 'error',
       category: 'links'
     },
@@ -125,7 +125,7 @@ const A11yRules = {
         const genericTexts = ['click here', 'read more', 'here', 'link', 'learn more'];
         return genericTexts.includes(text);
       },
-      message: 'Link with non-informative text',
+      message: 'Ссылка с неинформативным текстом',
       type: 'warning',
       category: 'links'
     }
@@ -135,7 +135,7 @@ const A11yRules = {
   headings: {
     missingH1: {
       check: () => document.querySelectorAll('h1').length === 0,
-      message: 'Missing H1 heading',
+      message: 'Отсутствует заголовок H1',
       type: 'error',
       category: 'headings'
     },
@@ -156,7 +156,7 @@ const A11yRules = {
         
         return false;
       },
-      message: 'Heading hierarchy violation',
+      message: 'Нарушена иерархия заголовков',
       type: 'warning',
       category: 'headings'
     }
@@ -173,7 +173,7 @@ const A11yRules = {
         
         return !text && !ariaLabel && !title && !imgAlt;
       },
-      message: 'Button without text label',
+      message: 'Кнопка без текстовой подписи',
       type: 'error',
       category: 'interactive'
     },
@@ -182,7 +182,7 @@ const A11yRules = {
         const style = window.getComputedStyle(element);
         return style.outline === 'none' && style.outlineOffset === '0px';
       },
-      message: 'Focusable element without visual focus indicator',
+      message: 'Фокусируемый элемент без видимого индикатора фокуса',
       type: 'warning',
       category: 'interactive'
     }
@@ -259,7 +259,7 @@ const A11yRuleUtils = {
    * @param {Element} element - DOM element
    */
   getElementSelector: function(element) {
-    if (!element || !element.tagName) return 'unknown';
+    if (!element || !element.tagName) return 'неизвестно';
     
     try {
       if (element.id) {
@@ -273,7 +273,7 @@ const A11yRuleUtils = {
       }
       return element.tagName.toLowerCase();
     } catch (e) {
-      return element.tagName ? element.tagName.toLowerCase() : 'unknown';
+      return element.tagName ? element.tagName.toLowerCase() : 'неизвестно';
     }
   },
 

@@ -4,7 +4,7 @@
  */
 
 // Make sure all dependencies are loaded
-console.log('Accessibility Inspector content script loaded');
+console.log('Content script инспектора доступности загружен');
 
 // Global flag to indicate content script is ready
 window.a11yInspectorReady = true;
@@ -14,7 +14,7 @@ function initializeDependencies() {
   try {
     // Check and initialize ColorUtils if not available
     if (typeof ColorUtils === 'undefined') {
-      console.warn('ColorUtils not loaded, using fallback');
+      console.warn('ColorUtils не загружен, используется резервная реализация');
       // Simple fallback color utils
       window.ColorUtils = {
         calculateContrastRatio: function(color1, color2) {
@@ -29,7 +29,7 @@ function initializeDependencies() {
 
     // Check and initialize A11yRules if not available
     if (typeof A11yRules === 'undefined') {
-      console.warn('A11yRules not loaded, using fallback');
+      console.warn('A11yRules не загружен, используется резервная реализация');
       window.A11yRules = {};
       window.A11yRuleUtils = {
         runAllChecks: function() { return []; }
@@ -38,20 +38,20 @@ function initializeDependencies() {
 
     // Check and initialize ReportGenerator if not available
     if (typeof ReportGenerator === 'undefined') {
-      console.warn('ReportGenerator not loaded, using fallback');
+      console.warn('ReportGenerator не загружен, используется резервная реализация');
       window.ReportGenerator = class {
         generate(data, format) {
           if (format === 'json') {
             return JSON.stringify(data, null, 2);
           }
-          return `Report in ${format} format\n${JSON.stringify(data, null, 2)}`;
+          return `Отчёт в формате ${format}\n${JSON.stringify(data, null, 2)}`;
         }
       };
     }
 
     return true;
   } catch (error) {
-    console.error('Error initializing dependencies:', error);
+    console.error('Ошибка инициализации зависимостей:', error);
     return false;
   }
 }
@@ -64,18 +64,18 @@ initializeDependencies();
  * @returns {Object} Accessibility report with issues and summary
  */
 function runA11yChecks() {
-  console.log('Starting accessibility checks...');
+  console.log('Запуск проверки доступности...');
   
   const issues = [];
   
   try {
     // Use modular accessibility rules if available
     if (typeof A11yRuleUtils !== 'undefined' && typeof A11yRuleUtils.runAllChecks === 'function') {
-      console.log('Using A11yRuleUtils for checks');
+      console.log('Для проверок используется A11yRuleUtils');
       const ruleIssues = A11yRuleUtils.runAllChecks();
       issues.push(...ruleIssues);
     } else {
-      console.log('A11yRuleUtils not available, running basic checks');
+      console.log('A11yRuleUtils недоступен, запускаются базовые проверки');
       // Run basic checks if rule utils are not available
       issues.push(...runBasicChecks());
     }
@@ -97,17 +97,17 @@ function runA11yChecks() {
     issues.push(...langIssues);
 
   } catch (error) {
-    console.error('Error during accessibility check:', error);
+    console.error('Ошибка во время проверки доступности:', error);
     issues.push({
       type: 'error',
       category: 'system',
-      message: `Check execution error: ${error.message}`,
+      message: `Ошибка выполнения проверки: ${error.message}`,
       element: null,
       selector: null
     });
   }
 
-  console.log(`Accessibility check completed: ${issues.length} issues found`);
+  console.log(`Проверка доступности завершена: найдено проблем - ${issues.length}`);
   
   return {
     url: window.location.href,
@@ -135,7 +135,7 @@ function runBasicChecks() {
         issues.push({
           type: 'error',
           category: 'images',
-          message: 'Image missing alt attribute',
+          message: 'У изображения отсутствует атрибут alt',
           element: img.outerHTML.slice(0, 100),
           selector: getSelector(img)
         });
@@ -148,7 +148,7 @@ function runBasicChecks() {
       issues.push({
         type: 'error',
         category: 'language',
-        message: 'Missing lang attribute on html element',
+        message: 'У элемента html отсутствует атрибут lang',
         element: html.outerHTML.slice(0, 100),
         selector: 'html'
       });
@@ -160,7 +160,7 @@ function runBasicChecks() {
       issues.push({
         type: 'warning',
         category: 'headings',
-        message: 'No H1 heading found',
+        message: 'Заголовок H1 не найден',
         element: null,
         selector: null
       });
@@ -173,7 +173,7 @@ function runBasicChecks() {
         issues.push({
           type: 'warning',
           category: 'forms',
-          message: 'Input without associated label',
+          message: 'Поле ввода без связанной подписи',
           element: input.outerHTML.slice(0, 100),
           selector: getSelector(input)
         });
@@ -181,11 +181,11 @@ function runBasicChecks() {
     });
 
   } catch (error) {
-    console.error('Error in basic checks:', error);
+    console.error('Ошибка в базовых проверках:', error);
     issues.push({
       type: 'error',
       category: 'system',
-      message: `Basic check error: ${error.message}`,
+      message: `Ошибка базовой проверки: ${error.message}`,
       element: null,
       selector: null
     });
@@ -211,7 +211,7 @@ function checkColorContrast() {
         issues.push({
           type: 'error',
           category: 'contrast',
-          message: `Insufficient contrast: ${contrastResult.ratio.toFixed(2)}:1 (required ${contrastResult.requiredAARatio}:1)`,
+          message: `Недостаточный контраст: ${contrastResult.ratio.toFixed(2)}:1 (требуется ${contrastResult.requiredAARatio}:1)`,
           element: element.outerHTML.slice(0, 100),
           selector: getSelector(element),
           details: {
@@ -227,7 +227,7 @@ function checkColorContrast() {
       }
     });
   } catch (error) {
-    console.error('Contrast check error:', error);
+    console.error('Ошибка проверки контраста:', error);
   }
 
   return issues;
@@ -259,7 +259,7 @@ function getTextElements() {
       if (elements.length > 1500) break;
     }
   } catch (error) {
-    console.error('Error getting text elements:', error);
+    console.error('Ошибка получения текстовых элементов:', error);
   }
 
   return elements;
@@ -328,7 +328,7 @@ function getContrastRatioForElement(element) {
       suggestions: suggestions
     };
   } catch (error) {
-    console.error('Contrast calculation error:', error);
+    console.error('Ошибка расчета контраста:', error);
     return null;
   }
 }
@@ -408,7 +408,7 @@ function checkAriaAttributes() {
         issues.push({
           type: 'warning',
           category: 'aria',
-          message: 'Element with aria-label without visible text content',
+          message: 'Элемент с aria-label не содержит видимого текста',
           element: el.outerHTML.slice(0, 100),
           selector: getSelector(el)
         });
@@ -423,7 +423,7 @@ function checkAriaAttributes() {
         issues.push({
           type: 'warning',
           category: 'aria',
-          message: `Invalid ARIA role: ${role}`,
+          message: `Недопустимая ARIA-роль: ${role}`,
           element: el.outerHTML.slice(0, 100),
           selector: getSelector(el)
         });
@@ -431,7 +431,7 @@ function checkAriaAttributes() {
     });
 
   } catch (error) {
-    console.error('ARIA check error:', error);
+    console.error('Ошибка проверки ARIA:', error);
   }
 
   return issues;
@@ -468,7 +468,7 @@ function checkKeyboardNavigation() {
         issues.push({
           type: 'error',
           category: 'keyboard',
-          message: 'Invalid tabindex value',
+          message: 'Недопустимое значение tabindex',
           element: el.outerHTML.slice(0, 100),
           selector: getSelector(el)
         });
@@ -487,7 +487,7 @@ function checkKeyboardNavigation() {
           issues.push({
             type: 'warning',
             category: 'keyboard',
-            message: 'Interactive element may not be keyboard accessible',
+            message: 'Интерактивный элемент может быть недоступен с клавиатуры',
             element: el.outerHTML.slice(0, 100),
             selector: getSelector(el)
           });
@@ -496,7 +496,7 @@ function checkKeyboardNavigation() {
     });
 
   } catch (error) {
-    console.error('Keyboard navigation check error:', error);
+    console.error('Ошибка проверки клавиатурной навигации:', error);
   }
 
   return issues;
@@ -517,7 +517,7 @@ function checkSemanticMarkup() {
       issues.push({
         type: 'warning',
         category: 'semantics',
-        message: 'Using div instead of button for interactive element',
+        message: 'Для интерактивного элемента используется div вместо button',
         element: div.outerHTML.slice(0, 100),
         selector: getSelector(div)
       });
@@ -530,7 +530,7 @@ function checkSemanticMarkup() {
         issues.push({
           type: 'warning',
           category: 'semantics',
-          message: 'Possible table usage for layout',
+          message: 'Возможно, таблица используется для вёрстки',
           element: table.outerHTML.slice(0, 100),
           selector: getSelector(table)
         });
@@ -538,7 +538,7 @@ function checkSemanticMarkup() {
     });
 
   } catch (error) {
-    console.error('Semantic markup check error:', error);
+    console.error('Ошибка проверки семантической разметки:', error);
   }
 
   return issues;
@@ -558,13 +558,13 @@ function checkLanguage() {
       issues.push({
         type: 'error',
         category: 'language',
-        message: 'Missing lang attribute on html element',
+        message: 'У элемента html отсутствует атрибут lang',
         element: html.outerHTML.slice(0, 100),
         selector: 'html'
       });
     }
   } catch (error) {
-    console.error('Language check error:', error);
+    console.error('Ошибка проверки языка страницы:', error);
   }
   
   return issues;
@@ -575,7 +575,7 @@ function checkLanguage() {
  * @param {Element} element - DOM element
  */
 function getSelector(element) {
-  if (!element || !element.tagName) return 'unknown';
+  if (!element || !element.tagName) return 'неизвестно';
   
   try {
     if (element.id) {
@@ -589,6 +589,6 @@ function getSelector(element) {
     }
     return element.tagName.toLowerCase();
   } catch (e) {
-    return element.tagName ? element.tagName.toLowerCase() : 'unknown';
+    return element.tagName ? element.tagName.toLowerCase() : 'неизвестно';
   }
 }

@@ -41,10 +41,10 @@ function createPairConstructElement(title, value, colorValue){
 
 
 function generateIssue(position, issue){
-    /* Создает развертывающийся виджет для единичной проблемы */
+    /* Создаёт развёртывающийся виджет для единичной проблемы */
     const cnt_category = Object.hasOwn(issue, "category") ? issue.category : "Категория не указана";
     const cnt_element = Object.hasOwn(issue, "element") ? issue.element : null;
-    const cnt_message = (Object.hasOwn(issue, "message") ? issue.message : "Сообщение отсутсвует");
+    const cnt_message = (Object.hasOwn(issue, "message") ? issue.message : "Сообщение отсутствует");
     const cnt_selector = Object.hasOwn(issue, "selector") ? issue.selector : null;
     const cnt_type = Object.hasOwn(issue, "type") ? issue.type : "Не указано";
 
@@ -69,9 +69,9 @@ function generateIssue(position, issue){
     let summary_container = document.createElement("span");
     summary_container.classList.add("issues__list__details__title");
     let category_span = document.createElement("h3");
-    category_span.innerHTML = "Issue: " + position + " > <strong>Category</strong>: " + cnt_category;
+    category_span.innerHTML = "Проблема: " + (position + 1) + " > <strong>Категория</strong>: " + translateCategory(cnt_category);
     let span_issue_type = document.createElement("span");
-    span_issue_type.innerText = cnt_type;
+    span_issue_type.innerText = translateIssueType(cnt_type);
     summary_container.appendChild(category_span);
     summary_container.appendChild(span_issue_type);
     summary.appendChild(summary_container);
@@ -80,12 +80,12 @@ function generateIssue(position, issue){
     let details_contained = document.createElement("div");
 
     if (cnt_selector){
-        details_contained.appendChild(createPairConstructElement("Selector", cnt_selector));
+        details_contained.appendChild(createPairConstructElement("Селектор", cnt_selector));
     }
 
     details_contained.classList.add("issues__list__details__container");
     let p_message_title = document.createElement("strong");
-    p_message_title.innerText = "Message:";
+    p_message_title.innerText = "Сообщение:";
     details_contained.appendChild(p_message_title);
     let p_message_text = document.createElement("p")
     p_message_text.innerText = cnt_message;
@@ -93,7 +93,7 @@ function generateIssue(position, issue){
     
     if (cnt_element){
         let label_for_element_code = document.createElement("p");
-        label_for_element_code.innerHTML = "<strong>Element code</strong>:";
+        label_for_element_code.innerHTML = "<strong>Код элемента</strong>:";
         details_contained.appendChild(label_for_element_code);
         let element_code = document.createElement("code");
         element_code.classList.add("issues__list__details__code");
@@ -106,31 +106,31 @@ function generateIssue(position, issue){
         let hrAfterCode = document.createElement("hr");
         hrAfterCode.style = "width: -webkit-fill-available;";
         details_contained.appendChild(hrAfterCode);
-        details_contained.appendChild(createPairConstructElement("Contrast parameters"));
+        details_contained.appendChild(createPairConstructElement("Параметры контраста"));
 
         let contrastParametersContainer = document.createElement("div");
         contrastParametersContainer.style = "margin-left: .7rem;"
 
         contrastParametersContainer.appendChild(createPairConstructElement(
-            "Score", issue.details.suggestions.score
+            "Оценка", translateContrastScore(issue.details.suggestions.score)
         ));
 
-        contrastParametersContainer.appendChild(createPairConstructElement("Background element:"));
+        contrastParametersContainer.appendChild(createPairConstructElement("Фон элемента:"));
 
         let listBackColorShowed = document.createElement("ul");
         [
             createPairConstructElement(
-                "backroundColor", issue.details.backgroundColor, issue.details.backgroundColor),
+                "Цвет фона", issue.details.backgroundColor, issue.details.backgroundColor),
             createPairConstructElement(
-                "textColor", issue.details.textColor, issue.details.textColor),
+                "Цвет текста", issue.details.textColor, issue.details.textColor),
             createPairConstructElement(
-                "fontSize", issue.details.fontSize),
+                "Размер шрифта", issue.details.fontSize),
             createPairConstructElement(
-                "fontWeight", issue.details.fontWeight),
+                "Насыщенность шрифта", issue.details.fontWeight),
             createPairConstructElement(
-                "ratio", issue.details.ratio),
+                "Контраст", issue.details.ratio),
             createPairConstructElement(
-                "requiredRatio", issue.details.requiredRatio)
+                "Требуемый контраст", issue.details.requiredRatio)
         ].forEach(item => {
             let itemShowed = document.createElement("li");
             itemShowed.appendChild(item);
@@ -142,27 +142,27 @@ function generateIssue(position, issue){
         
 
         if (issue.details.suggestions){
-            contrastParametersContainer.appendChild(createPairConstructElement("Suggestions:"));
+            contrastParametersContainer.appendChild(createPairConstructElement("Рекомендации:"));
 
             let suggestionDiv = document.createElement("div");
             suggestionDiv.style = "margin-left: 1rem;"
             suggestionDiv.appendChild(
                 createPairConstructElement(
-                    "Improvement", issue.details.suggestions.improvement))
+                    "Улучшение", translateImprovement(issue.details.suggestions.improvement)))
             suggestionDiv.appendChild(document.createElement("hr"));
             suggestionDiv.appendChild(
                 createPairConstructElement(
-                    "Current color", issue.details.suggestions.current, issue.details.suggestions.current))
+                    "Текущий цвет", issue.details.suggestions.current, issue.details.suggestions.current))
             suggestionDiv.appendChild(
                 createPairConstructElement(
-                    "Suggestion color", issue.details.suggestions.suggested, issue.details.suggestions.suggested))
+                    "Предлагаемый цвет", issue.details.suggestions.suggested, issue.details.suggestions.suggested))
             suggestionDiv.appendChild(document.createElement("hr"));
             suggestionDiv.appendChild(
                 createPairConstructElement(
-                    "Current ratio", issue.details.suggestions.currentRatio))
+                    "Текущий контраст", issue.details.suggestions.currentRatio))
             suggestionDiv.appendChild(
                 createPairConstructElement(
-                    "Suggestion ratio", issue.details.suggestions.suggestedRatio))
+                    "Предлагаемый контраст", issue.details.suggestions.suggestedRatio))
             contrastParametersContainer.appendChild(suggestionDiv);
         }
     }
@@ -185,14 +185,14 @@ function initSelectorsForSorting(issuesElements){
     let issueTypes = new Set([...issuesElements].map((item) => item.getAttribute("data-issue-type")));
     issueTypes.forEach((item, i) => {
         let opt = document.createElement("option");
-        opt.innerText = item;
+        opt.innerText = translateIssueType(item);
         opt.value = item;
         selectorByIssuesTypes.appendChild(opt);
     });
     let categoryTypes = new Set([...issuesElements].map((item) => item.getAttribute("data-category")));
     categoryTypes.forEach((item, i) => {
         let opt = document.createElement("option");
-        opt.innerText = item;
+        opt.innerText = translateCategory(item);
         opt.value = item;
         selectorByCategories.appendChild(opt);
     });
@@ -222,7 +222,7 @@ function init(reportData){
         item.addEventListener("click", function() {
             setTimeout(() => {
                 isAllIssuesElementsExpanded = checkIsAllExpandedElements(issuesElements);
-                btnExpandIssues.innerText = isAllIssuesElementsExpanded ? "Expand all" : "Hide All";
+                btnExpandIssues.innerText = isAllIssuesElementsExpanded ? "Развернуть всё" : "Свернуть всё";
             }, 5)
             
         })
@@ -257,13 +257,43 @@ function init(reportData){
             item.classList.remove("hidden");
         })
         selectorByCategories.value = "null";
-        selectorByIssueTypes.value = "null";
+        selectorByIssuesTypes.value = "null";
     });
     btnExpandIssues.addEventListener("click", function() {
         [...issuesElements].forEach(item => {
             item.toggleAttribute("open", isAllIssuesElementsExpanded);
         });
         isAllIssuesElementsExpanded = !isAllIssuesElementsExpanded;
-        btnExpandIssues.innerText = isAllIssuesElementsExpanded ? "Expand all" : "Hide All";
+        btnExpandIssues.innerText = isAllIssuesElementsExpanded ? "Развернуть всё" : "Свернуть всё";
     });   
+}
+
+function translateIssueType(type) {
+    return ({ error: "ошибка", warning: "предупреждение" })[type] || (type || "не указано");
+}
+
+function translateCategory(category) {
+    return ({
+        images: "изображения",
+        language: "язык страницы",
+        headings: "заголовки",
+        forms: "формы",
+        contrast: "контраст",
+        aria: "ARIA",
+        keyboard: "клавиатура",
+        semantics: "семантика",
+        navigation: "навигация",
+        links: "ссылки",
+        interactive: "интерактивные элементы",
+        system: "система",
+        general: "общее"
+    })[category] || (category || "неизвестно");
+}
+
+function translateImprovement(improvement) {
+    return ({ none: "не требуется", darken: "сделать темнее", lighten: "сделать светлее", error: "ошибка" })[improvement] || (improvement || "не указано");
+}
+
+function translateContrastScore(score) {
+    return score === "Fail" ? "Не соответствует" : (score || "не указано");
 }

@@ -26,7 +26,7 @@ class ReportGenerator {
       }
     } catch (error) {
       console.error('Error generating report:', error);
-      return `Error generating ${format} report: ${error.message}`;
+      return `Ошибка формирования отчёта в формате ${format}: ${error.message}`;
     }
   }
 
@@ -49,11 +49,11 @@ class ReportGenerator {
     const summary = data.summary || { total: 0, errors: 0, warnings: 0 };
     
     return `<!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Accessibility Report - ${this.escapeHtml(data.url || 'Unknown URL')}</title>
+  <title>Отчёт о доступности - ${this.escapeHtml(data.url || 'неизвестный URL')}</title>
   <style>
     body { 
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
@@ -180,32 +180,32 @@ class ReportGenerator {
 <body>
   <div class="container">
     <div class="header">
-      <h1>Accessibility Report</h1>
+      <h1>Отчёт о доступности</h1>
       <div class="summary">
-        <h2>Summary</h2>
-        <p><strong>URL:</strong> ${this.escapeHtml(data.url || 'Unknown')}</p>
-        <p><strong>Date:</strong> ${new Date(data.timestamp || Date.now()).toLocaleString()}</p>
+        <h2>Сводка</h2>
+        <p><strong>URL:</strong> ${this.escapeHtml(data.url || 'неизвестно')}</p>
+        <p><strong>Дата:</strong> ${new Date(data.timestamp || Date.now()).toLocaleString('ru-RU')}</p>
         
         <div class="summary-stats">
           <div class="stat">
             <span class="stat-number total">${summary.total}</span>
-            <span>Total Issues</span>
+            <span>Всего проблем</span>
           </div>
           <div class="stat">
             <span class="stat-number errors">${summary.errors}</span>
-            <span>Errors</span>
+            <span>Ошибок</span>
           </div>
           <div class="stat">
             <span class="stat-number warnings">${summary.warnings}</span>
-            <span>Warnings</span>
+            <span>Предупреждений</span>
           </div>
         </div>
       </div>
     </div>
     
-    <h2>Issues</h2>
+    <h2>Проблемы</h2>
     ${issues.length === 0 ? 
-      '<div class="no-issues">✅ No accessibility issues found!</div>' : 
+      '<div class="no-issues">✅ Проблемы доступности не найдены!</div>' : 
       issues.map(issue => this.generateIssueHTML(issue)).join('')
     }
   </div>
@@ -222,12 +222,12 @@ class ReportGenerator {
     return `
     <div class="issue ${issue.type}">
       <div class="issue-header">
-        <div class="category">${this.escapeHtml(issue.category || 'general')}</div>
-        <div class="issue-type">${issue.type.toUpperCase()}</div>
+        <div class="category">${this.escapeHtml(this.translateCategory(issue.category))}</div>
+        <div class="issue-type">${this.escapeHtml(this.translateIssueType(issue.type).toUpperCase())}</div>
       </div>
-      <div><strong>${this.escapeHtml(issue.message || 'No message')}</strong></div>
-      ${issue.selector ? `<div class="selector"><strong>Selector:</strong> ${this.escapeHtml(issue.selector)}</div>` : ''}
-      ${issue.element ? `<div class="element"><strong>Element:</strong> ${this.escapeHtml(issue.element)}</div>` : ''}
+      <div><strong>${this.escapeHtml(issue.message || 'Нет сообщения')}</strong></div>
+      ${issue.selector ? `<div class="selector"><strong>Селектор:</strong> ${this.escapeHtml(issue.selector)}</div>` : ''}
+      ${issue.element ? `<div class="element"><strong>Элемент:</strong> ${this.escapeHtml(issue.element)}</div>` : ''}
       ${issue.details ? this.generateDetailsHTML(issue.details) : ''}
     </div>`;
   }
@@ -242,12 +242,12 @@ class ReportGenerator {
       // Contrast details
       return `
       <div class="details">
-        <strong>Contrast Details:</strong><br>
-        <strong>Ratio:</strong> ${details.ratio}:1 (required: ${details.requiredRatio || 'N/A'}:1)<br>
-        ${details.fontSize ? `<strong>Font Size:</strong> ${details.fontSize}` : ''}
-        ${details.fontWeight ? `<strong>Font Weight:</strong> ${details.fontWeight}` : ''}
-        ${details.textColor ? `<strong>Text Color:</strong> ${details.textColor}` : ''}
-        ${details.backgroundColor ? `<strong>Background Color:</strong> ${details.backgroundColor}` : ''}
+        <strong>Параметры контраста:</strong><br>
+        <strong>Контраст:</strong> ${details.ratio}:1 (требуется: ${details.requiredRatio || 'н/д'}:1)<br>
+        ${details.fontSize ? `<strong>Размер шрифта:</strong> ${details.fontSize}` : ''}
+        ${details.fontWeight ? `<strong>Насыщенность шрифта:</strong> ${details.fontWeight}` : ''}
+        ${details.textColor ? `<strong>Цвет текста:</strong> ${details.textColor}` : ''}
+        ${details.backgroundColor ? `<strong>Цвет фона:</strong> ${details.backgroundColor}` : ''}
         ${details.suggestions ? this.generateSuggestionsHTML(details.suggestions) : ''}
       </div>`;
     }
@@ -255,7 +255,7 @@ class ReportGenerator {
     // General details
     return `
     <div class="details">
-      <strong>Details:</strong><br>
+      <strong>Подробности:</strong><br>
       <pre>${this.escapeHtml(JSON.stringify(details, null, 2))}</pre>
     </div>`;
   }
@@ -268,9 +268,9 @@ class ReportGenerator {
   generateSuggestionsHTML(suggestions) {
     if (!suggestions || suggestions.improvement === 'error') return '';
     
-    return `<br><strong>Suggestions:</strong> ${suggestions.improvement === 'darken' ? 'Darken' : 'Lighten'} text color<br>
-            <strong>Current:</strong> ${suggestions.current} (${suggestions.currentRatio.toFixed(2)}:1)<br>
-            <strong>Suggested:</strong> ${suggestions.suggested} (${suggestions.suggestedRatio.toFixed(2)}:1)`;
+    return `<br><strong>Рекомендации:</strong> ${suggestions.improvement === 'darken' ? 'Сделать текст темнее' : 'Сделать текст светлее'}<br>
+            <strong>Текущий цвет:</strong> ${suggestions.current} (${suggestions.currentRatio.toFixed(2)}:1)<br>
+            <strong>Предлагаемый цвет:</strong> ${suggestions.suggested} (${suggestions.suggestedRatio.toFixed(2)}:1)`;
   }
 
   /**
@@ -282,33 +282,33 @@ class ReportGenerator {
     const issues = data.issues || [];
     const summary = data.summary || { total: 0, errors: 0, warnings: 0 };
     
-    let text = 'ACCESSIBILITY REPORT\n';
+    let text = 'ОТЧЁТ О ДОСТУПНОСТИ\n';
     text += '===================\n\n';
     
-    text += `URL: ${data.url || 'Unknown'}\n`;
-    text += `Date: ${new Date(data.timestamp || Date.now()).toLocaleString()}\n\n`;
+    text += `URL: ${data.url || 'неизвестно'}\n`;
+    text += `Дата: ${new Date(data.timestamp || Date.now()).toLocaleString('ru-RU')}\n\n`;
     
-    text += 'SUMMARY:\n';
-    text += `- Total Issues: ${summary.total}\n`;
-    text += `- Errors: ${summary.errors}\n`;
-    text += `- Warnings: ${summary.warnings}\n\n`;
+    text += 'СВОДКА:\n';
+    text += `- Всего проблем: ${summary.total}\n`;
+    text += `- Ошибок: ${summary.errors}\n`;
+    text += `- Предупреждений: ${summary.warnings}\n\n`;
     
     if (issues.length === 0) {
-      text += '✅ No accessibility issues found!\n';
+      text += '✅ Проблемы доступности не найдены!\n';
     } else {
-      text += 'ISSUES:\n\n';
+      text += 'ПРОБЛЕМЫ:\n\n';
       
       issues.forEach((issue, index) => {
-        const typeLabel = issue.type === 'error' ? 'ERROR' : 'WARNING';
-        text += `${index + 1}. [${typeLabel}] ${issue.category || 'general'}\n`;
-        text += `   Message: ${issue.message || 'No message'}\n`;
+        const typeLabel = issue.type === 'error' ? 'ОШИБКА' : 'ПРЕДУПРЕЖДЕНИЕ';
+        text += `${index + 1}. [${typeLabel}] ${this.translateCategory(issue.category)}\n`;
+        text += `   Сообщение: ${issue.message || 'Нет сообщения'}\n`;
         
         if (issue.selector) {
-          text += `   Selector: ${issue.selector}\n`;
+          text += `   Селектор: ${issue.selector}\n`;
         }
         
         if (issue.details) {
-          text += `   Details: ${JSON.stringify(issue.details, null, 2)}\n`;
+          text += `   Подробности: ${JSON.stringify(issue.details, null, 2)}\n`;
         }
         
         text += '\n';
@@ -332,6 +332,28 @@ class ReportGenerator {
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#039;");
+  }
+
+  translateIssueType(type) {
+    return ({ error: 'ошибка', warning: 'предупреждение' })[type] || (type || 'не указано');
+  }
+
+  translateCategory(category) {
+    return ({
+      images: 'изображения',
+      language: 'язык страницы',
+      headings: 'заголовки',
+      forms: 'формы',
+      contrast: 'контраст',
+      aria: 'ARIA',
+      keyboard: 'клавиатура',
+      semantics: 'семантика',
+      navigation: 'навигация',
+      links: 'ссылки',
+      interactive: 'интерактивные элементы',
+      system: 'система',
+      general: 'общее'
+    })[category] || (category || 'неизвестно');
   }
 }
 

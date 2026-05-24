@@ -71,7 +71,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     if (!isValidUrl(url)) {
-      showStatus('Пожалуйста, введите действительный URL-адрес (http:// or https://)', 'error');
+      showStatus('Пожалуйста, введите действительный URL-адрес (http:// или https://)', 'error');
       urlInput.focus();
       return;
     }
@@ -91,12 +91,12 @@ document.addEventListener('DOMContentLoaded', function() {
     setLoadingState(false);
 
     if (chrome.runtime.lastError) {
-      showStatus(`Error: ${chrome.runtime.lastError.message}`, 'error');
+      showStatus(`Ошибка: ${chrome.runtime.lastError.message}`, 'error');
       return;
     }
 
     if (response?.error) {
-      showStatus(`Check error: ${response.error}`, 'error');
+      showStatus(`Ошибка проверки: ${response.error}`, 'error');
       return;
     }
 
@@ -152,9 +152,9 @@ document.addEventListener('DOMContentLoaded', function() {
       } else if (typeof reportData === 'object' && reportData.summary) {
         summary = reportData.summary;
       } else if (typeof reportData === 'string') {
-        const totalMatch = reportData.match(/Total Issues:?\s*(\d+)/i);
-        const errorsMatch = reportData.match(/Errors:?\s*(\d+)/i);
-        const warningsMatch = reportData.match(/Warnings:?\s*(\d+)/i);
+        const totalMatch = reportData.match(/(?:Всего проблем|Total Issues):?\s*(\d+)/i);
+        const errorsMatch = reportData.match(/(?:Ошибок|Errors):?\s*(\d+)/i);
+        const warningsMatch = reportData.match(/(?:Предупреждений|Warnings):?\s*(\d+)/i);
         summary = {
           total: totalMatch ? parseInt(totalMatch[1]) : 0,
           errors: errorsMatch ? parseInt(errorsMatch[1]) : 0,
@@ -167,19 +167,19 @@ document.addEventListener('DOMContentLoaded', function() {
       summaryStats.innerHTML = `
         <div class="stat-item">
           <span class="stat-number total">${summary.total}</span>
-          <span class="stat-label">total issues</span>
+          <span class="stat-label">всего проблем</span>
         </div>
         <div class="stat-item">
           <span class="stat-number errors">${summary.errors}</span>
-          <span class="stat-label">errors</span>
+          <span class="stat-label">ошибок</span>
         </div>
         <div class="stat-item">
           <span class="stat-number warnings">${summary.warnings}</span>
-          <span class="stat-label">warnings</span>
+          <span class="stat-label">предупреждений</span>
         </div>
       `;
     } catch {
-      summaryStats.innerHTML = '<p>Error loading statistics</p>';
+      summaryStats.innerHTML = '<p>Ошибка загрузки статистики</p>';
     }
   }
 
@@ -198,7 +198,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       reportContent.innerHTML = content;
     } catch (error) {
-      reportContent.innerHTML = `<p>Report formatting error: ${error.message}</p>`;
+      reportContent.innerHTML = `<p>Ошибка форматирования отчёта: ${error.message}</p>`;
     }
   }
 
@@ -211,7 +211,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const issues = reportData.issues || [];
     let html = `
       <div class="report-header">
-        <h4>Отчет доступности</h4>
+        <h1>Отчёт о доступности</h1>
         <p><strong>URL:</strong> ${reportData.url || 'Неизвестно'}</p>
         <p><strong>Время проверки:</strong> ${reportData.timestamp || 'Неизвестно'}</p>
       </div>
@@ -226,8 +226,8 @@ document.addEventListener('DOMContentLoaded', function() {
         html += `
           <div class="issue-item ${typeClass}">
             <div class="issue-header">
-              <span class="issue-type">${typeClass === 'error' ? '❌ Ошибка' : '⚠️ Предупреждение'}</span>
-              <span class="issue-category">${issue.category || 'unknown'}</span>
+              <span class="issue-type">${typeClass === 'error' ? 'Ошибка' : 'Предупреждение'}</span>
+              <span class="issue-category">${translateCategory(issue.category)}</span>
             </div>
             <div class="issue-message">${issue.message || 'Нет описания'}</div>
             ${issue.selector ? `<div class="issue-selector"><strong>Селектор:</strong> ${issue.selector}</div>` : ''}
@@ -243,13 +243,13 @@ document.addEventListener('DOMContentLoaded', function() {
   function formatAsText(reportData) {
     const report = typeof reportData === 'string' ? JSON.parse(reportData) : reportData;
     const issues = report.issues || [];
-    let text = `Отчет доступности\nURL: ${report.url || 'Неизвестно'}\nВремя проверки: ${report.timestamp || 'Неизвестно'}\n\n`;
+    let text = `Отчёт о доступности\nURL: ${report.url || 'Неизвестно'}\nВремя проверки: ${report.timestamp || 'Неизвестно'}\n\n`;
     if (issues.length === 0) text += 'Проблемы доступности не найдены! ✅\n';
     else {
       text += `Найдено проблем: ${issues.length}\n\n`;
       issues.forEach((issue, index) => {
         const typeLabel = issue.type === 'error' ? 'ОШИБКА' : 'ПРЕДУПРЕЖДЕНИЕ';
-        text += `${index + 1}. [${typeLabel}] ${issue.category || 'unknown'}\n`;
+        text += `${index + 1}. [${typeLabel}] ${translateCategory(issue.category)}\n`;
         text += `   Сообщение: ${issue.message || 'Нет описания'}\n`;
         if (issue.selector) text += `   Селектор: ${issue.selector}\n`;
         text += '\n';
@@ -259,7 +259,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function formatAsMarkdown(data) {
-        let _report = "# Отчет по доступности сайта\n";
+        let _report = "# Отчёт о доступности сайта\n";
     _report += "## Сводка\n\n";
     _report += "**Сайт:** " + data.url + "\n";
     _report += "**Время:** " + data.timestamp + "\n";
@@ -268,33 +268,33 @@ document.addEventListener('DOMContentLoaded', function() {
     _report += "**Ошибок:** " + data.summary.errors + "\n\n";
     _report += "## Детализация ошибок \n";
     data.issues.forEach((item, i) => {
-        _report += "### **Issue:** " + i + "\n\n";
-        _report += "**Type:** " + item.type + "\n";
-        _report += "**Category**" + item.category + "\n"
-        _report += "**Message:** " + item.message + "\n";
-        _report += item.selector ? "**Selector:** " + item.selector + "\n" : "";
-        _report += item.element ? "**Element code:**\n```\n" + item.element + "\n```\n" : "";
+        _report += "### **Проблема:** " + (i + 1) + "\n\n";
+        _report += "**Тип:** " + translateIssueType(item.type) + "\n";
+        _report += "**Категория:** " + translateCategory(item.category) + "\n"
+        _report += "**Сообщение:** " + item.message + "\n";
+        _report += item.selector ? "**Селектор:** " + item.selector + "\n" : "";
+        _report += item.element ? "**Код элемента:**\n```\n" + item.element + "\n```\n" : "";
         if (item.category === "contrast"){
-            _report += "#### Contrast parameters\n\n";
-            _report += "**Score:** " + item.details.suggestions.score + "\n";
-            _report += "**Improvement:** " + item.details.suggestions.improvement + "\n\n"
-            _report += "##### Background info\n\n"
-            _report += "**backgroundColor:** " + item.details.backgroundColor + "\n";
-            _report += "**fontSize:** " + item.details.fontSize + "\n";
-            _report += "**fontWeight:** " + item.details.fontWeight + "\n";
-            _report += "**ratio:** " + item.details.ratio + "\n";
-            _report += "**requiredRatio:** " + item.details.requiredRatio + "\n";
-            _report += "**textColor:** " + item.details.textColor + "\n";
-            _report += "##### Top element info\n\n";
-            _report += "**Color:**\n";
+            _report += "#### Параметры контраста\n\n";
+            _report += "**Оценка:** " + translateContrastScore(item.details.suggestions.score) + "\n";
+            _report += "**Улучшение:** " + translateImprovement(item.details.suggestions.improvement) + "\n\n"
+            _report += "##### Информация о фоне\n\n"
+            _report += "**Цвет фона:** " + item.details.backgroundColor + "\n";
+            _report += "**Размер шрифта:** " + item.details.fontSize + "\n";
+            _report += "**Насыщенность шрифта:** " + item.details.fontWeight + "\n";
+            _report += "**Контраст:** " + item.details.ratio + "\n";
+            _report += "**Требуемый контраст:** " + item.details.requiredRatio + "\n";
+            _report += "**Цвет текста:** " + item.details.textColor + "\n";
+            _report += "##### Текущий цвет\n\n";
+            _report += "**Цвет:**\n";
             _report += " - **RGB:** " + item.details.suggestions.current + "\n";
             _report += " - **HEX:** " + item.details.suggestions.currentHex + "\n\n";
-            _report += "**Ratio:** " + item.details.suggestions.currentRatio + "\n";
-            _report += "##### Top element suggestions\n\n";
-            _report += "**Suggested color:** \n";
+            _report += "**Контраст:** " + item.details.suggestions.currentRatio + "\n";
+            _report += "##### Рекомендации\n\n";
+            _report += "**Предлагаемый цвет:** \n";
             _report += " - **RGB:** " + item.details.suggestions.suggested + "\n";
             _report += " - **HEX:** " + item.details.suggestions.suggestedHex + "\n\n";
-            _report += "**Ratio:** " + item.details.suggestions.suggestedRatio + "\n";
+            _report += "**Контраст:** " + item.details.suggestions.suggestedRatio + "\n";
         }
         _report += "\n------------\n";
     });
@@ -323,7 +323,7 @@ document.addEventListener('DOMContentLoaded', function() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      showStatus('Отчет скачан успешно', 'success');
+      showStatus('Отчёт скачан успешно', 'success');
     } catch (error) { showStatus(`Ошибка скачивания: ${error.message}`, 'error'); }
   }
 
@@ -339,18 +339,18 @@ document.addEventListener('DOMContentLoaded', function() {
         case 'json': default: content = typeof currentReport === 'string' ? currentReport : JSON.stringify(currentReport, null, 2); break;
       }
       await navigator.clipboard.writeText(content);
-      showStatus('Отчет скопирован в буфер обмена', 'success');
+      showStatus('Отчёт скопирован в буфер обмена', 'success');
     } catch (error) { showStatus(`Ошибка копирования: ${error.message}`, 'error'); }
   }
 
   function setLoadingState(isLoading) {
     if (isLoading) {
       checkBtn.disabled = true;
-      buttonText.textContent = 'Checking...';
+      buttonText.textContent = 'Проверка...';
       loadingSpinner.classList.remove('hidden');
     } else {
       checkBtn.disabled = false;
-      buttonText.textContent = 'Check Accessibility';
+      buttonText.textContent = 'Проверить доступность';
       loadingSpinner.classList.add('hidden');
     }
   }
@@ -365,6 +365,36 @@ document.addEventListener('DOMContentLoaded', function() {
   function hideResults() { resultsDiv.classList.add('hidden'); currentReport = null; }
   function isValidUrl(string) { try { const url = new URL(string); return url.protocol === 'http:' || url.protocol === 'https:'; } catch { return false; } }
   function escapeHtml(unsafe) { if (unsafe == null) return ''; return unsafe.toString().replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }
+
+  function translateIssueType(type) {
+    return ({ error: 'ошибка', warning: 'предупреждение' })[type] || (type || 'не указано');
+  }
+
+  function translateCategory(category) {
+    return ({
+      images: 'изображения',
+      language: 'язык страницы',
+      headings: 'заголовки',
+      forms: 'формы',
+      contrast: 'контраст',
+      aria: 'ARIA',
+      keyboard: 'клавиатура',
+      semantics: 'семантика',
+      navigation: 'навигация',
+      links: 'ссылки',
+      interactive: 'интерактивные элементы',
+      system: 'система',
+      general: 'общее'
+    })[category] || (category || 'неизвестно');
+  }
+
+  function translateImprovement(improvement) {
+    return ({ none: 'не требуется', darken: 'сделать темнее', lighten: 'сделать светлее', error: 'ошибка' })[improvement] || (improvement || 'не указано');
+  }
+
+  function translateContrastScore(score) {
+    return score === 'Fail' ? 'Не соответствует' : (score || 'не указано');
+  }
 
   function openReportAsWindow(reportData, reportFormat){
     let heading_popup = '';

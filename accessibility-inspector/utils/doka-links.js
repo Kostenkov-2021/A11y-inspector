@@ -28,7 +28,7 @@
     roleButton: ['role="button"', 'https://doka.guide/a11y/role-button/'],
     roleLink: ['role="link"', 'https://doka.guide/a11y/role-link/'],
     roleHeading: ['role="heading"', 'https://doka.guide/a11y/role-heading/'],
-    skipLink: ['Skip link', 'https://doka.guide/a11y/skip-link/'],
+    skipLink: ['Ссылка для пропуска навигации', 'https://doka.guide/a11y/skip-link/'],
     prefersContrast: ['prefers-contrast', 'https://doka.guide/a11y/prefers-contrast/'],
     forcedColors: ['forced-colors', 'https://doka.guide/a11y/forced-colors/']
   };

@@ -112,6 +112,8 @@ body{
     font-size: 0.875em;
     border: 1px solid #e1e1e1;
     margin-bottom: .5rem;
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 
 .issues__list__details__container {
@@ -134,6 +136,18 @@ body{
 
 .issues__list__details__guide-links a {
     color: #174ea6;
+}
+
+.issues__list__details__extra {
+    margin-top: .75rem;
+}
+
+.issues__list__details__extra dl {
+    margin: .4rem 0 0;
+}
+
+.issues__list__details__extra dd {
+    margin: 0 0 .35rem 1rem;
 }
 
 .hidden {

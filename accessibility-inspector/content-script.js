@@ -172,7 +172,7 @@ function runBasicChecks() {
           type: 'error',
           category: 'images',
           message: 'У изображения отсутствует атрибут alt',
-          element: img.outerHTML.slice(0, 100),
+          element: img.outerHTML,
           selector: getSelector(img)
         });
       }
@@ -185,7 +185,7 @@ function runBasicChecks() {
         type: 'error',
         category: 'language',
         message: 'У элемента html отсутствует атрибут lang',
-        element: html.outerHTML.slice(0, 100),
+        element: html.outerHTML,
         selector: 'html'
       });
     }
@@ -196,7 +196,7 @@ function runBasicChecks() {
       issues.push({
         type: 'warning',
         category: 'headings',
-        message: 'Заголовок H1 не найден',
+        message: 'Заголовок H1 не найдён',
         element: null,
         selector: null
       });
@@ -210,7 +210,7 @@ function runBasicChecks() {
           type: 'warning',
           category: 'forms',
           message: 'Поле ввода без связанной подписи',
-          element: input.outerHTML.slice(0, 100),
+          element: input.outerHTML,
           selector: getSelector(input)
         });
       }
@@ -254,7 +254,7 @@ function checkPageTitle() {
         selector: 'title',
         details: {
           criterion: '2.4.2',
-          expected: 'Заголовок страницы должен описывать ее тему или назначение'
+          expected: 'Заголовок страницы должен описывать её тему или назначение'
         }
       });
       return issues;
@@ -270,7 +270,7 @@ function checkPageTitle() {
         details: {
           criterion: '2.4.2',
           title: title,
-          expected: 'Заголовок должен отличать страницу и кратко описывать ее назначение'
+          expected: 'Заголовок должен отличать страницу и кратко описывать её назначение'
         }
       });
     }
@@ -310,7 +310,7 @@ function checkAutocompletePurpose() {
           type: autocomplete === 'off' ? 'error' : 'warning',
           category: 'forms',
           message: `Поле, вероятно, требует autocomplete="${expected}"`,
-          element: control.outerHTML.slice(0, 100),
+          element: control.outerHTML,
           selector: getSelector(control),
           details: {
             criterion: '1.3.5',
@@ -415,7 +415,7 @@ function checkFormErrorAssistance() {
           type: 'warning',
           category: 'form-assistance',
           message: 'Обязательное поле не имеет явной инструкции о том, что оно обязательно',
-          element: control.outerHTML.slice(0, 100),
+          element: control.outerHTML,
           selector,
           details: {
             criterion: '3.3.2',
@@ -431,7 +431,7 @@ function checkFormErrorAssistance() {
           type: 'error',
           category: 'form-assistance',
           message: 'aria-describedby ссылается на несуществующий элемент',
-          element: control.outerHTML.slice(0, 100),
+          element: control.outerHTML,
           selector,
           details: {
             criterion: '3.3.2',
@@ -447,7 +447,7 @@ function checkFormErrorAssistance() {
           type: 'error',
           category: 'form-assistance',
           message: 'aria-errormessage ссылается на несуществующий элемент',
-          element: control.outerHTML.slice(0, 100),
+          element: control.outerHTML,
           selector,
           details: {
             criterion: '3.3.1',
@@ -463,7 +463,7 @@ function checkFormErrorAssistance() {
           type: 'error',
           category: 'form-assistance',
           message: 'Поле выглядит ошибочным, но не имеет aria-invalid="true"',
-          element: control.outerHTML.slice(0, 100),
+          element: control.outerHTML,
           selector,
           details: {
             criterion: '3.3.1',
@@ -481,7 +481,7 @@ function checkFormErrorAssistance() {
           type: 'error',
           category: 'form-assistance',
           message: 'Поле с aria-invalid не связано с текстом ошибки через aria-describedby или aria-errormessage',
-          element: control.outerHTML.slice(0, 100),
+          element: control.outerHTML,
           selector,
           details: {
             criterion: '3.3.1',
@@ -499,7 +499,7 @@ function checkFormErrorAssistance() {
           type: 'warning',
           category: 'form-assistance',
           message: 'Описание ошибочного поля не содержит понятного текста ошибки или подсказки по исправлению',
-          element: control.outerHTML.slice(0, 100),
+          element: control.outerHTML,
           selector,
           details: {
             criterion: '3.3.3',
@@ -515,7 +515,7 @@ function checkFormErrorAssistance() {
           type: 'warning',
           category: 'form-assistance',
           message: 'Поле с ограничениями ввода не имеет связанной инструкции или примера формата',
-          element: control.outerHTML.slice(0, 100),
+          element: control.outerHTML,
           selector,
           details: {
             criterion: '3.3.2',
@@ -684,7 +684,7 @@ function checkGlobalFormErrors() {
         type: 'warning',
         category: 'form-assistance',
         message: 'Текст ошибки не связан с полем через aria-describedby или aria-errormessage',
-        element: container.outerHTML.slice(0, 100),
+        element: container.outerHTML,
         selector: getSelector(container),
         details: {
           criterion: '3.3.1',
@@ -716,7 +716,7 @@ function checkColorContrast() {
           type: 'error',
           category: 'contrast',
           message: `Недостаточный контраст: ${contrastResult.ratio.toFixed(2)}:1 (требуется ${contrastResult.requiredAARatio}:1)`,
-          element: element.outerHTML.slice(0, 100),
+          element: element.outerHTML,
           selector: getSelector(element),
           details: {
             ratio: contrastResult.ratio.toFixed(2),
@@ -798,7 +798,7 @@ function getLowContrastBorderIssue(element, requiredRatio) {
         type: 'warning',
         category: 'non-text-contrast',
         message: `Недостаточный контраст границы элемента: ${ratio.toFixed(2)}:1 (требуется ${requiredRatio}:1)`,
-        element: element.outerHTML.slice(0, 100),
+        element: element.outerHTML,
         selector: getSelector(element),
         details: {
           criterion: '1.4.11',
@@ -829,7 +829,7 @@ function getLowContrastFocusIssue(element, requiredRatio) {
         type: 'warning',
         category: 'non-text-contrast',
         message: `Недостаточный контраст индикатора фокуса: ${ratio.toFixed(2)}:1 (требуется ${requiredRatio}:1)`,
-        element: element.outerHTML.slice(0, 100),
+        element: element.outerHTML,
         selector: getSelector(element),
         details: {
           criterion: '1.4.11',
@@ -850,7 +850,7 @@ function getLowContrastFocusIssue(element, requiredRatio) {
         type: 'warning',
         category: 'non-text-contrast',
         message: `Недостаточный контраст тени/кольца фокуса: ${ratio.toFixed(2)}:1 (требуется ${requiredRatio}:1)`,
-        element: element.outerHTML.slice(0, 100),
+        element: element.outerHTML,
         selector: getSelector(element),
         details: {
           criterion: '1.4.11',
@@ -887,7 +887,7 @@ function getLowContrastGraphicIssue(element, requiredRatio) {
     type: 'warning',
     category: 'non-text-contrast',
     message: `Недостаточный контраст графического элемента: ${ratio.toFixed(2)}:1 (требуется ${requiredRatio}:1)`,
-    element: element.outerHTML.slice(0, 100),
+    element: element.outerHTML,
     selector: getSelector(element),
     details: {
       criterion: '1.4.11',
@@ -973,7 +973,7 @@ function getOverflowingTextSpacingElements() {
       const selector = getSelector(element);
       results.set(selector, {
         selector,
-        element: element.outerHTML.slice(0, 100),
+        element: element.outerHTML,
         scrollWidth: element.scrollWidth,
         clientWidth: element.clientWidth,
         scrollHeight: element.scrollHeight,
@@ -1022,7 +1022,7 @@ function findNativeTitleTooltipIssues() {
       type: 'warning',
       category: 'hover-focus-content',
       message: 'Нативная подсказка title может быть недоступна для наведения, фокуса или закрытия',
-      element: element.outerHTML.slice(0, 100),
+      element: element.outerHTML,
       selector: getSelector(element),
       details: {
         criterion: '1.4.13',
@@ -1067,7 +1067,7 @@ function findVisiblePopupContentIssues() {
         type: 'warning',
         category: 'hover-focus-content',
         message: 'Всплывающий контент нельзя удержать наведением курсора из-за pointer-events: none',
-        element: popup.outerHTML.slice(0, 100),
+        element: popup.outerHTML,
         selector,
         details: {
           criterion: '1.4.13',
@@ -1082,8 +1082,8 @@ function findVisiblePopupContentIssues() {
       issues.push({
         type: 'warning',
         category: 'hover-focus-content',
-        message: 'У всплывающего контента не найден явный способ закрытия',
-        element: popup.outerHTML.slice(0, 100),
+        message: 'У всплывающего контента не найдён явный способ закрытия',
+        element: popup.outerHTML,
         selector,
         details: {
           criterion: '1.4.13',
@@ -1135,7 +1135,7 @@ function findMouseOnlyPopupTriggerIssues() {
         type: 'warning',
         category: 'hover-focus-content',
         message: 'Триггер всплывающего контента выглядит доступным только при наведении мышью',
-        element: trigger.outerHTML.slice(0, 100),
+        element: trigger.outerHTML,
         selector: getSelector(trigger),
         details: {
           criterion: '1.4.13',
@@ -1151,7 +1151,7 @@ function findMouseOnlyPopupTriggerIssues() {
         type: 'warning',
         category: 'hover-focus-content',
         message: 'Связанный всплывающий контент может исчезать или быть недоступным при попытке навести на него курсор',
-        element: controlledPopup.outerHTML.slice(0, 100),
+        element: controlledPopup.outerHTML,
         selector: getSelector(controlledPopup),
         details: {
           criterion: '1.4.13',
@@ -1244,14 +1244,14 @@ function checkFocusOrder() {
         type: 'warning',
         category: 'focus-order',
         message: `Положительный tabindex="${item.tabIndex}" может нарушать естественный порядок фокуса`,
-        element: item.element.outerHTML.slice(0, 100),
+        element: item.element.outerHTML,
         selector: item.selector,
         details: {
           criterion: '2.4.3',
           issue: 'positive-tabindex',
           focusIndex: item.focusIndex,
           tabIndex: item.tabIndex,
-          expected: 'Используйте естественный DOM-порядок или tabindex="0" вместо положительных значений'
+          expected: 'Используйте естественный порядок элементов в DOM или tabindex="0" вместо положительных значений'
         }
       });
     });
@@ -1262,7 +1262,7 @@ function checkFocusOrder() {
         type: 'warning',
         category: 'focus-order',
         message: 'Порядок фокуса выглядит несогласованным с визуальным расположением элементов',
-        element: jump.current.element.outerHTML.slice(0, 100),
+        element: jump.current.element.outerHTML,
         selector: jump.current.selector,
         details: {
           criterion: '2.4.3',
@@ -1497,7 +1497,7 @@ function getFocusTrapScopeIssues(focusableItems) {
     if (boundaryCancellations.length > 0 && exitMechanisms.length === 0) {
       issues.push(createKeyboardTrapIssue(scope, {
         type: 'error',
-        message: 'Компонент перехватывает Tab на границе и не имеет найденного способа выхода',
+        message: 'Компонент перехватывает Tab на границе и не имеет найдённого способа выхода',
         issue: 'tab-boundary-cancelled-without-exit',
         details: {
           focusableCount: items.length,
@@ -1648,7 +1648,7 @@ function createKeyboardTrapIssue(element, options) {
     type: options.type,
     category: 'keyboard-traps',
     message: options.message,
-    element: element.outerHTML.slice(0, 100),
+    element: element.outerHTML,
     selector: getSelector(element),
     details: Object.assign({
       criterion: '2.1.2',
@@ -1682,7 +1682,7 @@ function checkLabelInName() {
           type: 'error',
           category: 'label-in-name',
           message: 'Видимая метка интерактивного элемента не входит в его доступное имя',
-          element: element.outerHTML.slice(0, 100),
+          element: element.outerHTML,
           selector: getSelector(element),
           details: {
             criterion: '2.5.3',
@@ -1882,7 +1882,7 @@ function getLiveRegionIssues(region) {
   if ((role === 'status' || role === 'alert' || ariaLive) && isLiveRegionVisuallyHiddenAndEmpty(region, text)) {
     issues.push(createStatusMessageIssue(region, {
       type: 'warning',
-      message: 'Live region пустая и скрыта; убедитесь, что динамические сообщения будут добавляться в этот контейнер',
+      message: 'Динамическая область пустая и скрыта; убедитесь, что динамические сообщения будут добавляться в этот контейнер',
       issue: 'empty-hidden-live-region',
       details: { role, ariaLive, selector }
     }));
@@ -1891,7 +1891,7 @@ function getLiveRegionIssues(region) {
   if (isLikelyErrorStatus(region, text) && role !== 'alert' && ariaLive !== 'assertive') {
     issues.push(createStatusMessageIssue(region, {
       type: 'warning',
-      message: 'Сообщение похоже на ошибку, но не использует assertive live region или role="alert"',
+      message: 'Сообщение похоже на ошибку, но не использует режим assertive для динамической области или role="alert"',
       issue: 'error-message-not-assertive',
       details: { role, ariaLive, text: text.slice(0, 180) }
     }));
@@ -1941,7 +1941,7 @@ function createStatusMessageIssue(element, options) {
     type: options.type,
     category: 'status-messages',
     message: options.message,
-    element: element.outerHTML.slice(0, 100),
+    element: element.outerHTML,
     selector: getSelector(element),
     details: Object.assign({
       criterion: '4.1.3',
@@ -2179,7 +2179,7 @@ function createSyntaxIssue(element, options) {
     type: options.type,
     category: 'syntax',
     message: options.message,
-    element: element.outerHTML.slice(0, 100),
+    element: element.outerHTML,
     selector: getSelector(element),
     details: Object.assign({
       criterion: '4.1.1',
@@ -2283,7 +2283,7 @@ function getContrastRatioForElement(element) {
       suggestions: suggestions
     };
   } catch (error) {
-    console.error('Ошибка расчета контраста:', error);
+    console.error('Ошибка расчёта контраста:', error);
     return null;
   }
 }
@@ -2385,7 +2385,7 @@ function checkAriaAttributes() {
           type: 'warning',
           category: 'aria',
           message: 'Элемент с aria-label не содержит видимого текста',
-          element: el.outerHTML.slice(0, 100),
+          element: el.outerHTML,
           selector: getSelector(el)
         });
       }
@@ -2400,7 +2400,7 @@ function checkAriaAttributes() {
           type: 'warning',
           category: 'aria',
           message: `Недопустимая ARIA-роль: ${role}`,
-          element: el.outerHTML.slice(0, 100),
+          element: el.outerHTML,
           selector: getSelector(el)
         });
       }
@@ -2445,7 +2445,7 @@ function checkKeyboardNavigation() {
           type: 'error',
           category: 'keyboard',
           message: 'Недопустимое значение tabindex',
-          element: el.outerHTML.slice(0, 100),
+          element: el.outerHTML,
           selector: getSelector(el)
         });
       }
@@ -2464,7 +2464,7 @@ function checkKeyboardNavigation() {
             type: 'warning',
             category: 'keyboard',
             message: 'Интерактивный элемент может быть недоступен с клавиатуры',
-            element: el.outerHTML.slice(0, 100),
+            element: el.outerHTML,
             selector: getSelector(el)
           });
         }
@@ -2494,7 +2494,7 @@ function checkSemanticMarkup() {
         type: 'warning',
         category: 'semantics',
         message: 'Для интерактивного элемента используется div вместо button',
-        element: div.outerHTML.slice(0, 100),
+        element: div.outerHTML,
         selector: getSelector(div)
       });
     });
@@ -2507,7 +2507,7 @@ function checkSemanticMarkup() {
           type: 'warning',
           category: 'semantics',
           message: 'Возможно, таблица используется для вёрстки',
-          element: table.outerHTML.slice(0, 100),
+          element: table.outerHTML,
           selector: getSelector(table)
         });
       }
@@ -2535,7 +2535,7 @@ function checkLanguage() {
         type: 'error',
         category: 'language',
         message: 'У элемента html отсутствует атрибут lang',
-        element: html.outerHTML.slice(0, 100),
+        element: html.outerHTML,
         selector: 'html'
       });
     }
@@ -2577,7 +2577,7 @@ function checkLanguageOfParts() {
         type: 'warning',
         category: 'language-parts',
         message: `Фрагмент текста похож на язык "${detected.lang}", но не имеет lang`,
-        element: element.outerHTML.slice(0, 100),
+        element: element.outerHTML,
         selector,
         details: {
           criterion: '3.1.2',

@@ -231,7 +231,8 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
             <div class="issue-message">${issue.message || 'Нет описания'}</div>
             ${issue.selector ? `<div class="issue-selector"><strong>Селектор:</strong> ${issue.selector}</div>` : ''}
-            ${issue.details ? `<div class="issue-details"><pre>${JSON.stringify(issue.details, null, 2)}</pre></div>` : ''}
+            ${issue.element ? `<div class="issue-element"><strong>Код элемента:</strong><pre><code>${escapeHtml(issue.element)}</code></pre></div>` : ''}
+            ${issue.details ? formatDetailsHtml(issue.details) : ''}
             ${formatGuideLinksHtml(issue)}
           </div>
         `;
@@ -253,6 +254,8 @@ document.addEventListener('DOMContentLoaded', function() {
         text += `${index + 1}. [${typeLabel}] ${translateCategory(issue.category)}\n`;
         text += `   Сообщение: ${issue.message || 'Нет описания'}\n`;
         if (issue.selector) text += `   Селектор: ${issue.selector}\n`;
+        if (issue.element) text += `   Код элемента:\n${issue.element}\n`;
+        if (issue.details) text += formatDetailsText(issue.details, '   ');
         text += formatGuideLinksText(issue);
         text += '\n';
       });
@@ -275,8 +278,7 @@ document.addEventListener('DOMContentLoaded', function() {
         _report += "**Категория:** " + translateCategory(item.category) + "\n"
         _report += "**Сообщение:** " + item.message + "\n";
         _report += item.selector ? "**Селектор:** " + item.selector + "\n" : "";
-        _report += item.element ? "**Код элемента:**\n```\n" + item.element + "\n```\n" : "";
-        _report += formatGuideLinksMarkdown(item);
+        _report += item.element ? formatElementMarkdown(item.element) : "";
         if (item.category === "contrast"){
             _report += "#### Параметры контраста\n\n";
             _report += "**Оценка:** " + translateContrastScore(item.details.suggestions.score) + "\n";
@@ -298,11 +300,150 @@ document.addEventListener('DOMContentLoaded', function() {
             _report += " - **RGB:** " + item.details.suggestions.suggested + "\n";
             _report += " - **HEX:** " + item.details.suggestions.suggestedHex + "\n\n";
             _report += "**Контраст:** " + item.details.suggestions.suggestedRatio + "\n";
+        } else if (item.details) {
+            _report += formatDetailsMarkdown(item.details);
         }
+        _report += formatGuideLinksMarkdown(item);
         _report += "\n------------\n";
     });
 
     return _report;
+  }
+
+  function formatDetailsHtml(details) {
+    const entries = Object.entries(details || {});
+    if (!entries.length) return '<div class="issue-details"><strong>Подробности:</strong> дополнительные сведения отсутствуют</div>';
+    return `<div class="issue-details"><strong>Подробности:</strong><dl>${entries.map(([key, value]) => `<dt><strong>${escapeHtml(translateDetailKey(key))}:</strong></dt><dd>${escapeHtml(formatDetailValue(value, key))}</dd>`).join('')}</dl></div>`;
+  }
+
+  function formatElementMarkdown(element) {
+    const fence = String(element).includes('```') ? '````' : '```';
+    return `**Код элемента:**\n${fence}\n${element}\n${fence}\n`;
+  }
+
+  function formatDetailsText(details, indent = '') {
+    const entries = Object.entries(details || {});
+    if (!entries.length) return `${indent}Подробности: дополнительные сведения отсутствуют\n`;
+    return `${indent}Подробности:\n` + entries.map(([key, value]) => `${indent}- ${translateDetailKey(key)}: ${formatDetailValue(value, key)}\n`).join('');
+  }
+
+  function formatDetailsMarkdown(details) {
+    const entries = Object.entries(details || {});
+    if (!entries.length) return "\n#### Подробности\n\nДополнительные сведения отсутствуют\n";
+    return "\n#### Подробности\n\n" + entries.map(([key, value]) => `- **${translateDetailKey(key)}:** ${formatDetailValue(value, key)}\n`).join('');
+  }
+
+  function formatDetailValue(value, key = '') {
+    if (value === null || value === undefined || value === '') return 'не указано';
+    if (Array.isArray(value)) return value.length ? value.map(item => formatDetailValue(item, key)).join('; ') : 'нет данных';
+    if (typeof value === 'object') {
+      return Object.entries(value).map(([itemKey, itemValue]) => `${translateDetailKey(itemKey)}: ${formatDetailValue(itemValue, itemKey)}`).join('; ');
+    }
+    if (typeof value === 'boolean') return value ? 'да' : 'нет';
+    if (['issue', 'reason', 'problem', 'check'].includes(key)) return translateDetailCode(value);
+    if (key === 'improvement') return ({ darken: 'сделать текст темнее', lighten: 'сделать текст светлее', error: 'не удалось подобрать улучшение' })[value] || String(value);
+    return String(value);
+  }
+
+  function translateDetailCode(value) {
+    return ({
+      'required-field-without-instruction': 'обязательное поле без инструкции',
+      'broken-aria-describedby': 'aria-describedby ссылается на несуществующий элемент',
+      'broken-aria-errormessage': 'aria-errormessage ссылается на несуществующий элемент',
+      'visual-error-without-aria-invalid': 'визуальная ошибка без aria-invalid',
+      'invalid-field-without-error-description': 'ошибочное поле без связанного описания ошибки',
+      'invalid-field-without-correction-suggestion': 'ошибочное поле без подсказки по исправлению',
+      'input-constraint-without-instruction': 'ограничение ввода без инструкции',
+      'unassociated-error-message': 'текст ошибки не связан с полем',
+      'native-title-tooltip': 'нативная подсказка title',
+      'not-hoverable': 'контент недоступен при наведении',
+      'no-visible-dismiss': 'нет видимого способа закрытия',
+      'hover-only-trigger': 'триггер доступен только при наведении',
+      'controlled-popup-not-hoverable': 'связанный всплывающий контент недоступен при наведении',
+      'positive-tabindex': 'положительный tabindex',
+      'focus-moves-to-earlier-visual-row': 'фокус переходит на визуально более раннюю строку',
+      'focus-moves-backward-on-same-row': 'фокус движется назад в той же визуальной строке',
+      'potential-focus-trap-without-exit': 'возможная клавиатурная ловушка без выхода',
+      'tab-boundary-cancelled-without-exit': 'Tab перехватывается на границе без выхода',
+      'element-cancels-tab-both-directions': 'элемент перехватывает Tab и Shift+Tab',
+      'visible-label-not-in-accessible-name': 'видимая метка не входит в доступное имя',
+      'invalid-aria-live': 'недопустимое значение aria-live',
+      'invalid-aria-atomic': 'недопустимое значение aria-atomic',
+      'alert-live-off': 'role="alert" отключён через aria-live="off"',
+      'status-live-off': 'role="status" отключён через aria-live="off"',
+      'live-region-aria-hidden': 'динамическая область скрыта от вспомогательных технологий',
+      'empty-hidden-live-region': 'пустая скрытая динамическая область',
+      'error-message-not-assertive': 'ошибка не объявляется в assertive-режиме',
+      'status-message-without-live-region': 'статусное сообщение без динамической области',
+      'unannounced-status-container': 'статусный контейнер не объявляется вспомогательными технологиями',
+      'empty-id': 'пустой id',
+      'id-contains-whitespace': 'id содержит пробельные символы',
+      'duplicate-id': 'дублирующийся id',
+      'empty-id-reference': 'пустая ссылка на id',
+      'single-id-reference-has-multiple-values': 'атрибут должен ссылаться только на один id',
+      'broken-aria-id-reference': 'ARIA-атрибут ссылается на несуществующий id',
+      'broken-label-for-reference': 'label[for] ссылается на несуществующий id',
+      'broken-list-reference': 'атрибут list ссылается на несуществующий datalist',
+      'broken-table-headers-reference': 'атрибут headers ссылается на несуществующий заголовок',
+      'broken-fragment-reference': 'якорная ссылка ведёт на несуществующий id',
+      'different-language-without-lang': 'фрагмент на другом языке без lang'
+    })[value] || String(value);
+  }
+
+  function translateDetailKey(key) {
+    return ({
+      criterion: 'Критерий',
+      issue: 'Проблема',
+      expected: 'Ожидаемое исправление',
+      currentAutocomplete: 'Текущее значение autocomplete',
+      expectedAutocomplete: 'Ожидаемое значение autocomplete',
+      fieldText: 'Текст поля',
+      accessibleName: 'Доступное имя',
+      describedByText: 'Текст aria-describedby',
+      ariaDescribedBy: 'Значение aria-describedby',
+      ariaErrorMessage: 'Значение aria-errormessage',
+      missingIds: 'Отсутствующие id',
+      missingId: 'Отсутствующий id',
+      attribute: 'Атрибут',
+      value: 'Значение',
+      role: 'Роль',
+      ariaLive: 'Значение aria-live',
+      ariaAtomic: 'Значение aria-atomic',
+      ariaHidden: 'Значение aria-hidden',
+      selector: 'Селектор',
+      text: 'Текст',
+      sample: 'Фрагмент текста',
+      pageLang: 'Язык страницы',
+      detectedLang: 'Определённый язык',
+      detectedIso3: 'Код языка ISO 639-3',
+      confidence: 'Уверенность определения',
+      alternatives: 'Альтернативы',
+      tabIndex: 'Значение tabindex',
+      previousElement: 'Предыдущий элемент',
+      currentElement: 'Текущий элемент',
+      previousRect: 'Область предыдущего элемента',
+      currentRect: 'Область текущего элемента',
+      visibleLabel: 'Видимая метка',
+      accessibleLabel: 'Доступная метка',
+      controlColor: 'Цвет элемента управления',
+      borderColor: 'Цвет границы',
+      outlineColor: 'Цвет обводки',
+      shadowColor: 'Цвет тени',
+      graphicColor: 'Цвет графики',
+      backgroundColor: 'Цвет фона',
+      textColor: 'Цвет текста',
+      ratio: 'Контраст',
+      requiredRatio: 'Требуемый контраст',
+      fontSize: 'Размер шрифта',
+      fontWeight: 'Насыщенность шрифта',
+      detectedErrorText: 'Найдённый текст ошибки',
+      linkedErrorText: 'Связанный текст ошибки',
+      constraints: 'Ограничения ввода',
+      scrollWidth: 'Ширина прокрутки',
+      clientWidth: 'Видимая ширина',
+      scrollHeight: 'Высота прокрутки',
+      clientHeight: 'Видимая высота'
+    })[key] || key;
   }
 
   function getGuideLinks(issue) {

@@ -1,4 +1,4 @@
-:root{
+﻿:root{
   --bg: #f6f7fb;
   --card: rgba(255,255,255,0.92);
   --muted-surface: #f3f4f6;
@@ -202,7 +202,7 @@ select{
   box-shadow:
       inset 0 2px 4px rgba(0,0,0,0.03),
       0 6px 12px rgba(0,0,0,0.05);
-  font-size:13px;  
+  font-size:13px;
   line-height:1.4;
 }
 
@@ -214,7 +214,7 @@ select{
   margin-bottom:12px;
   box-shadow:
       0 2px 6px rgba(0,0,0,0.04),
-      0 8px 20px rgba(0,0,0,0.05); 
+      0 8px 20px rgba(0,0,0,0.05);
 }
 .issue-item.error{ border-left:4px solid var(--error); background:#fff6f6; }
 .issue-item.warning{ border-left:4px solid var(--warn); background:#fffdf5; }
@@ -236,7 +236,12 @@ select{
 .report-content::-webkit-scrollbar-thumb{ background:rgba(100,100,120,0.2); border-radius:8px; }
 .report-content::-webkit-scrollbar-thumb:hover{ background:rgba(100,100,120,0.35); }
 
-@media (max-width:500px){
+.issue-element pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+  @media (max-width:500px){
   body{ width:420px; padding:14px; }
   .report-content{ font-size:12px; }
 }

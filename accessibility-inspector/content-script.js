@@ -117,6 +117,9 @@ function runA11yChecks() {
     const syntaxIssues = checkSyntaxIntegrity();
     issues.push(...syntaxIssues);
 
+    const ariaCurrentIssues = checkAriaCurrentForActiveItems();
+    issues.push(...ariaCurrentIssues);
+
     const ariaIssues = checkAriaAttributes();
     issues.push(...ariaIssues);
 
@@ -2186,6 +2189,158 @@ function createSyntaxIssue(element, options) {
       issue: options.issue
     }, options.details || {})
   };
+}
+
+/**
+ * Check aria-current for active navigation items.
+ */
+function checkAriaCurrentForActiveItems() {
+  const issues = [];
+  const seen = new Set();
+  const validValues = new Set(['page', 'step', 'location', 'date', 'time', 'true', 'false']);
+
+  try {
+    Array.from(document.querySelectorAll('[aria-current]')).slice(0, 1000).forEach(element => {
+      if (!isElementVisible(element)) return;
+
+      const value = (element.getAttribute('aria-current') || '').trim().toLowerCase();
+      if (!value) {
+        addUniqueIssue(issues, seen, createAriaCurrentIssue(element, {
+          type: 'error',
+          message: 'aria-current не должен быть пустым',
+          issue: 'empty-aria-current',
+          details: {
+            attribute: 'aria-current',
+            currentValue: element.getAttribute('aria-current'),
+            expected: 'Укажите одно из значений: page, step, location, date, time, true или false'
+          }
+        }));
+        return;
+      }
+
+      if (!validValues.has(value)) {
+        addUniqueIssue(issues, seen, createAriaCurrentIssue(element, {
+          type: 'warning',
+          message: `aria-current="${value}" использует нестандартное значение`,
+          issue: 'invalid-aria-current',
+          details: {
+            attribute: 'aria-current',
+            currentValue: value,
+            allowedValues: Array.from(validValues).join(', '),
+            expected: 'Для текущей страницы обычно используйте aria-current="page"'
+          }
+        }));
+      }
+    });
+
+    const currentCandidates = Array.from(document.querySelectorAll('a[href], [role="link"]'))
+      .slice(0, 2000)
+      .filter(element => isElementVisible(element) && isLikelyCurrentNavigationItem(element));
+
+    currentCandidates.forEach(element => {
+      if (hasOwnOrAncestorAriaCurrent(element)) return;
+
+      if ((element.getAttribute('aria-selected') || '').toLowerCase() === 'true') {
+        addUniqueIssue(issues, seen, createAriaCurrentIssue(element, {
+          type: 'warning',
+          message: 'Для ссылки на текущую страницу используется aria-selected вместо aria-current',
+          issue: 'aria-selected-used-instead-of-aria-current',
+          details: {
+            attribute: 'aria-selected',
+            currentValue: element.getAttribute('aria-selected'),
+            expected: 'Для активного пункта навигации используйте aria-current="page"'
+          }
+        }));
+        return;
+      }
+
+      addUniqueIssue(issues, seen, createAriaCurrentIssue(element, {
+        type: 'warning',
+        message: 'Активный пункт навигации не помечен aria-current',
+        issue: 'active-navigation-item-without-aria-current',
+        details: {
+          activeHint: getActiveNavigationHint(element),
+          href: element.getAttribute('href') || null,
+          expected: 'Добавьте aria-current="page" на ссылку текущей страницы или текущий пункт навигации'
+        }
+      }));
+    });
+  } catch (error) {
+    console.error('Ошибка проверки aria-current:', error);
+  }
+
+  return issues;
+}
+
+function createAriaCurrentIssue(element, options) {
+  return {
+    type: options.type,
+    category: 'navigation',
+    message: options.message,
+    element: element.outerHTML,
+    selector: getSelector(element),
+    details: Object.assign({
+      criterion: '4.1.2',
+      issue: options.issue
+    }, options.details || {})
+  };
+}
+
+function isLikelyCurrentNavigationItem(element) {
+  if (!isNavigationLikeElement(element)) return false;
+  if (hasActiveStateToken(element)) return true;
+
+  const parent = element.parentElement;
+  if (parent && hasActiveStateToken(parent)) return true;
+
+  const ariaSelected = (element.getAttribute('aria-selected') || '').toLowerCase();
+  if (ariaSelected === 'true') return true;
+
+  return isLinkToCurrentPage(element) && Boolean(element.closest('nav, [role="navigation"], .breadcrumb, [aria-label*="breadcrumb" i], [class*="breadcrumb" i], .pagination, [class*="pagination" i]'));
+}
+
+function isNavigationLikeElement(element) {
+  return element.matches('a[href], [role="link"]');
+}
+
+function hasOwnOrAncestorAriaCurrent(element) {
+  if (element.hasAttribute('aria-current')) return true;
+  const owner = element.closest('li[aria-current], [role="listitem"][aria-current], [role="menuitem"][aria-current]');
+  return Boolean(owner);
+}
+
+function hasActiveStateToken(element) {
+  const tokenSource = [
+    element.getAttribute('class'),
+    element.getAttribute('data-state'),
+    element.getAttribute('data-status'),
+    element.getAttribute('data-active')
+  ].filter(Boolean).join(' ').toLowerCase();
+
+  return /(^|[\s_-])(active|current|selected|is-active|is-current|router-link-active|router-link-exact-active|current-menu-item|menu-item-active)([\s_-]|$)/i.test(tokenSource);
+}
+
+function getActiveNavigationHint(element) {
+  if (hasActiveStateToken(element)) return 'активный класс или data-атрибут на ссылке';
+  if (element.parentElement && hasActiveStateToken(element.parentElement)) return 'активный класс или data-атрибут на родителе ссылки';
+  if ((element.getAttribute('aria-selected') || '').toLowerCase() === 'true') return 'aria-selected="true"';
+  if (isLinkToCurrentPage(element)) return 'ссылка ведёт на текущую страницу';
+  return 'пункт выглядит активным';
+}
+
+function isLinkToCurrentPage(element) {
+  const href = element.getAttribute('href');
+  if (!href || href === '#' || href.toLowerCase().startsWith('javascript:')) return false;
+
+  try {
+    const target = new URL(href, window.location.href);
+    const current = new URL(window.location.href);
+    target.hash = '';
+    current.hash = '';
+    return target.href === current.href;
+  } catch (error) {
+    return false;
+  }
 }
 
 /**

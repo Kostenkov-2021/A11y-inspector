@@ -141,6 +141,10 @@ function translateDetailCode(value) {
         "broken-list-reference": "атрибут list ссылается на несуществующий datalist",
         "broken-table-headers-reference": "атрибут headers ссылается на несуществующий заголовок",
         "broken-fragment-reference": "якорная ссылка ведёт на несуществующий id",
+        "empty-aria-current": "пустой aria-current",
+        "invalid-aria-current": "нестандартное значение aria-current",
+        "active-navigation-item-without-aria-current": "активный пункт навигации без aria-current",
+        "aria-selected-used-instead-of-aria-current": "aria-selected используется вместо aria-current",
         "different-language-without-lang": "фрагмент на другом языке без lang"
     })[value] || String(value);
 }
@@ -161,6 +165,10 @@ function translateDetailKey(key) {
         missingId: "Отсутствующий id",
         attribute: "Атрибут",
         value: "Значение",
+        currentValue: "Текущее значение",
+        allowedValues: "Допустимые значения",
+        activeHint: "Признак активного пункта",
+        href: "Адрес ссылки",
         role: "Роль",
         ariaLive: "Значение aria-live",
         ariaAtomic: "Значение aria-atomic",

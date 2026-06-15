@@ -47,7 +47,9 @@ async function handleAccessibilityCheck(url, format) {
       files: [
         'utils/color-utils.js',
         'utils/a11y-rules.js',
+        'utils/doka-links.js',
         'utils/report-generator.js',
+        'utils/language-detector.js',
         'content-script.js'
       ]
     });

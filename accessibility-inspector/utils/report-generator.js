@@ -36,7 +36,18 @@ class ReportGenerator {
    * @returns {string} JSON string
    */
   generateJSON(data) {
-    return JSON.stringify(data, null, 2);
+    return JSON.stringify(this.enrichWithGuideLinks(data), null, 2);
+  }
+
+  enrichWithGuideLinks(data) {
+    if (!data || !Array.isArray(data.issues)) return data;
+    return {
+      ...data,
+      issues: data.issues.map(issue => ({
+        ...issue,
+        guideLinks: this.getGuideLinks(issue)
+      }))
+    };
   }
 
   /**
@@ -146,6 +157,20 @@ class ReportGenerator {
       border-radius: 4px;
       font-size: 0.9em;
     }
+    .guide-links {
+      margin-top: 10px;
+      padding: 10px;
+      background: rgba(26,115,232,0.08);
+      border-radius: 4px;
+      font-size: 0.9em;
+    }
+    .guide-links ul {
+      margin: 6px 0 0;
+      padding-left: 20px;
+    }
+    .guide-links a {
+      color: #174ea6;
+    }
     .selector {
       font-family: 'Consolas', 'Monaco', monospace;
       background: #f5f5f5;
@@ -229,7 +254,21 @@ class ReportGenerator {
       ${issue.selector ? `<div class="selector"><strong>Селектор:</strong> ${this.escapeHtml(issue.selector)}</div>` : ''}
       ${issue.element ? `<div class="element"><strong>Элемент:</strong> ${this.escapeHtml(issue.element)}</div>` : ''}
       ${issue.details ? this.generateDetailsHTML(issue.details) : ''}
+      ${this.generateGuideLinksHTML(issue)}
     </div>`;
+  }
+
+  generateGuideLinksHTML(issue) {
+    const links = this.getGuideLinks(issue);
+    if (!links.length) return '';
+
+    return `
+      <div class="guide-links">
+        <strong>\u041c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u044b Doka:</strong>
+        <ul>
+          ${links.map(link => `<li><a href="${this.escapeHtml(link.url)}" target="_blank" rel="noopener noreferrer">${this.escapeHtml(link.title)}</a></li>`).join('')}
+        </ul>
+      </div>`;
   }
 
   /**
@@ -310,6 +349,14 @@ class ReportGenerator {
         if (issue.details) {
           text += `   Подробности: ${JSON.stringify(issue.details, null, 2)}\n`;
         }
+
+        const guideLinks = this.getGuideLinks(issue);
+        if (guideLinks.length) {
+          text += '   \u041c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u044b Doka:\n';
+          guideLinks.forEach(link => {
+            text += `   - ${link.title}: ${link.url}\n`;
+          });
+        }
         
         text += '\n';
       });
@@ -334,6 +381,11 @@ class ReportGenerator {
       .replace(/'/g, "&#039;");
   }
 
+  getGuideLinks(issue) {
+    const guide = typeof DokaGuideLinks !== 'undefined' ? DokaGuideLinks : null;
+    return guide && typeof guide.getLinks === 'function' ? guide.getLinks(issue) : [];
+  }
+
   translateIssueType(type) {
     return ({ error: 'ошибка', warning: 'предупреждение' })[type] || (type || 'не указано');
   }
@@ -342,6 +394,7 @@ class ReportGenerator {
     return ({
       images: 'изображения',
       language: 'язык страницы',
+      'language-parts': 'язык частей контента',
       headings: 'заголовки',
       forms: 'формы',
       contrast: 'контраст',
@@ -351,6 +404,16 @@ class ReportGenerator {
       navigation: 'навигация',
       links: 'ссылки',
       interactive: 'интерактивные элементы',
+      syntax: 'синтаксис',
+      'page-title': 'заголовок страницы',
+      'non-text-contrast': 'контраст нетекстовой информации',
+      'text-spacing': 'интервалы текста',
+      'hover-focus-content': 'контент при наведении и фокусе',
+      'focus-order': 'порядок фокуса',
+      'keyboard-traps': 'клавиатурные ловушки',
+      'label-in-name': 'метка в названии',
+      'status-messages': 'статусные сообщения',
+      'form-assistance': 'помощь при вводе',
       system: 'система',
       general: 'общее'
     })[category] || (category || 'неизвестно');

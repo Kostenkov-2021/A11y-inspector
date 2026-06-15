@@ -232,6 +232,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="issue-message">${issue.message || 'Нет описания'}</div>
             ${issue.selector ? `<div class="issue-selector"><strong>Селектор:</strong> ${issue.selector}</div>` : ''}
             ${issue.details ? `<div class="issue-details"><pre>${JSON.stringify(issue.details, null, 2)}</pre></div>` : ''}
+            ${formatGuideLinksHtml(issue)}
           </div>
         `;
       });
@@ -252,6 +253,7 @@ document.addEventListener('DOMContentLoaded', function() {
         text += `${index + 1}. [${typeLabel}] ${translateCategory(issue.category)}\n`;
         text += `   Сообщение: ${issue.message || 'Нет описания'}\n`;
         if (issue.selector) text += `   Селектор: ${issue.selector}\n`;
+        text += formatGuideLinksText(issue);
         text += '\n';
       });
     }
@@ -274,6 +276,7 @@ document.addEventListener('DOMContentLoaded', function() {
         _report += "**Сообщение:** " + item.message + "\n";
         _report += item.selector ? "**Селектор:** " + item.selector + "\n" : "";
         _report += item.element ? "**Код элемента:**\n```\n" + item.element + "\n```\n" : "";
+        _report += formatGuideLinksMarkdown(item);
         if (item.category === "contrast"){
             _report += "#### Параметры контраста\n\n";
             _report += "**Оценка:** " + translateContrastScore(item.details.suggestions.score) + "\n";
@@ -300,6 +303,30 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     return _report;
+  }
+
+  function getGuideLinks(issue) {
+    return typeof DokaGuideLinks !== 'undefined' && typeof DokaGuideLinks.getLinks === 'function'
+      ? DokaGuideLinks.getLinks(issue)
+      : [];
+  }
+
+  function formatGuideLinksHtml(issue) {
+    const links = getGuideLinks(issue);
+    if (!links.length) return '';
+    return `<div class="issue-guide-links"><strong>\u041c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u044b Doka:</strong><ul>${links.map(link => `<li><a href="${escapeHtml(link.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(link.title)}</a></li>`).join('')}</ul></div>`;
+  }
+
+  function formatGuideLinksText(issue) {
+    const links = getGuideLinks(issue);
+    if (!links.length) return '';
+    return '   \u041c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u044b Doka:\n' + links.map(link => `   - ${link.title}: ${link.url}\n`).join('');
+  }
+
+  function formatGuideLinksMarkdown(issue) {
+    const links = getGuideLinks(issue);
+    if (!links.length) return '';
+    return "\n**\u041c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u044b Doka:**\n" + links.map(link => `- [${link.title}](${link.url})\n`).join('');
   }
 
   function downloadReport() {
@@ -374,6 +401,7 @@ document.addEventListener('DOMContentLoaded', function() {
     return ({
       images: 'изображения',
       language: 'язык страницы',
+      'language-parts': 'язык частей контента',
       headings: 'заголовки',
       forms: 'формы',
       contrast: 'контраст',
@@ -383,6 +411,16 @@ document.addEventListener('DOMContentLoaded', function() {
       navigation: 'навигация',
       links: 'ссылки',
       interactive: 'интерактивные элементы',
+      syntax: 'синтаксис',
+      'page-title': 'заголовок страницы',
+      'non-text-contrast': 'контраст нетекстовой информации',
+      'text-spacing': 'интервалы текста',
+      'hover-focus-content': 'контент при наведении и фокусе',
+      'focus-order': 'порядок фокуса',
+      'keyboard-traps': 'клавиатурные ловушки',
+      'label-in-name': 'метка в названии',
+      'status-messages': 'статусные сообщения',
+      'form-assistance': 'помощь при вводе',
       system: 'система',
       general: 'общее'
     })[category] || (category || 'неизвестно');

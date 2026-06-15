@@ -16,7 +16,32 @@ const formatSelectedPreviewContainers = {
     "json": document.getElementById("report-content--json")
 };
 
+function getGuideLinksForIssue(issue) {
+    if (Array.isArray(issue?.guideLinks)) return issue.guideLinks;
+    return typeof DokaGuideLinks !== "undefined" && typeof DokaGuideLinks.getLinks === "function"
+        ? DokaGuideLinks.getLinks(issue)
+        : [];
+}
+
+function prepareReportForStandalone(reportData) {
+    if (!reportData) return reportData;
+    return {
+        ...reportData,
+        issues: (reportData.issues || []).map(issue => ({
+            ...issue,
+            guideLinks: getGuideLinksForIssue(issue)
+        }))
+    };
+}
+
+function formatGuideLinksMarkdown(issue) {
+    const links = getGuideLinksForIssue(issue);
+    if (!links.length) return "";
+    return "\n**\u041c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u044b Doka:**\n" + links.map(link => `- [${link.title}](${link.url})\n`).join("");
+}
+
 function downloadAsHTML(reportData){
+    const standaloneReportData = prepareReportForStandalone(reportData);
     
     const styles = `
     body{
@@ -140,6 +165,23 @@ function downloadAsHTML(reportData){
     display: flex;
     flex-direction: column;
 }
+
+.issues__list__details__guide-links {
+    margin-top: .75rem;
+    padding: .75rem;
+    background-color: #e8f0fe;
+    border-radius: 4px;
+}
+
+.issues__list__details__guide-links ul {
+    margin: .4rem 0 0;
+    padding-left: 1.2rem;
+}
+
+.issues__list__details__guide-links a {
+    color: #174ea6;
+}
+
 .hidden {
     display: none;
 }
@@ -325,6 +367,31 @@ function createPairConstructElement(title, value, colorValue){
     return colorDiv;
 }
 
+function createGuideLinksElement(issue) {
+    const links = Array.isArray(issue.guideLinks) ? issue.guideLinks : [];
+    if (!links.length) return null;
+
+    const container = document.createElement("div");
+    container.classList.add("issues__list__details__guide-links");
+    const title = document.createElement("strong");
+    title.innerText = "\u041c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u044b Doka:";
+    container.appendChild(title);
+
+    const list = document.createElement("ul");
+    links.forEach(link => {
+        const item = document.createElement("li");
+        const anchor = document.createElement("a");
+        anchor.href = link.url;
+        anchor.target = "_blank";
+        anchor.rel = "noopener noreferrer";
+        anchor.innerText = link.title;
+        item.appendChild(anchor);
+        list.appendChild(item);
+    });
+    container.appendChild(list);
+    return container;
+}
+
 
 
 function generateIssue(position, issue){
@@ -453,6 +520,10 @@ function generateIssue(position, issue){
             contrastParametersContainer.appendChild(suggestionDiv);
         }
     }
+    const guideLinksElement = createGuideLinksElement(issue);
+    if (guideLinksElement) {
+        details_contained.appendChild(guideLinksElement);
+    }
     details.appendChild(details_contained);
     return details;
 }
@@ -563,6 +634,7 @@ function translateCategory(category) {
     return ({
         images: "изображения",
         language: "язык страницы",
+        "language-parts": "язык частей контента",
         headings: "заголовки",
         forms: "формы",
         contrast: "контраст",
@@ -572,6 +644,16 @@ function translateCategory(category) {
         navigation: "навигация",
         links: "ссылки",
         interactive: "интерактивные элементы",
+        syntax: "синтаксис",
+        "page-title": "заголовок страницы",
+        "non-text-contrast": "контраст нетекстовой информации",
+        "text-spacing": "интервалы текста",
+        "hover-focus-content": "контент при наведении и фокусе",
+        "focus-order": "порядок фокуса",
+        "keyboard-traps": "клавиатурные ловушки",
+        "label-in-name": "метка в названии",
+        "status-messages": "статусные сообщения",
+        "form-assistance": "помощь при вводе",
         system: "система",
         general: "общее"
     })[category] || (category || "неизвестно");
@@ -645,7 +727,7 @@ function translateContrastScore(score) {
             </div>
             <div id="issues__list"></div>
         </main>
-        <script>let currentReport = ${JSON.stringify(reportData)};</script>
+        <script>let currentReport = ${JSON.stringify(standaloneReportData)};</script>
         <script>${script}</script>
         <script>init(currentReport);</script>
 </body>
@@ -664,6 +746,7 @@ function translateCategory(category) {
     return ({
         images: "изображения",
         language: "язык страницы",
+        "language-parts": "язык частей контента",
         headings: "заголовки",
         forms: "формы",
         contrast: "контраст",
@@ -673,6 +756,16 @@ function translateCategory(category) {
         navigation: "навигация",
         links: "ссылки",
         interactive: "интерактивные элементы",
+        syntax: "синтаксис",
+        "page-title": "заголовок страницы",
+        "non-text-contrast": "контраст нетекстовой информации",
+        "text-spacing": "интервалы текста",
+        "hover-focus-content": "контент при наведении и фокусе",
+        "focus-order": "порядок фокуса",
+        "keyboard-traps": "клавиатурные ловушки",
+        "label-in-name": "метка в названии",
+        "status-messages": "статусные сообщения",
+        "form-assistance": "помощь при вводе",
         system: "система",
         general: "общее"
     })[category] || (category || "неизвестно");
@@ -738,6 +831,7 @@ function parseReportAsMarkdwon(reportData){
         _report += "**Сообщение:** " + item.message + "\n";
         _report += item.selector ? "**Селектор:** " + item.selector + "\n" : "";
         _report += item.element ? "**Код элемента:**\n```\n" + item.element + "\n```\n" : "";
+        _report += formatGuideLinksMarkdown(item);
         if (item.category === "contrast"){
             _report += "#### Параметры контраста\n\n";
             _report += "**Оценка:** " + translateContrastScore(item.details.suggestions.score) + "\n";
@@ -777,7 +871,7 @@ function showInMarkdownFormat(reportData){
 document.addEventListener('DOMContentLoaded', function() {
     
     chrome.storage.local.get("currentReport", (result) => {
-        currentReport = result.currentReport;
+        currentReport = prepareReportForStandalone(result.currentReport);
         init(currentReport);
         showInJsonFormat(currentReport);
         showInMarkdownFormat(currentReport);

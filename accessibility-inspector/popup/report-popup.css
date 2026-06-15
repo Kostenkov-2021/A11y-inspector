@@ -119,6 +119,23 @@ body{
     display: flex;
     flex-direction: column;
 }
+
+.issues__list__details__guide-links {
+    margin-top: .75rem;
+    padding: .75rem;
+    background-color: #e8f0fe;
+    border-radius: 4px;
+}
+
+.issues__list__details__guide-links ul {
+    margin: .4rem 0 0;
+    padding-left: 1.2rem;
+}
+
+.issues__list__details__guide-links a {
+    color: #174ea6;
+}
+
 .hidden {
     display: none;
 }

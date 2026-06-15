@@ -38,6 +38,33 @@ function createPairConstructElement(title, value, colorValue){
     return colorDiv;
 }
 
+function createGuideLinksElement(issue) {
+    const links = typeof DokaGuideLinks !== "undefined" && typeof DokaGuideLinks.getLinks === "function"
+        ? DokaGuideLinks.getLinks(issue)
+        : [];
+    if (!links.length) return null;
+
+    const container = document.createElement("div");
+    container.classList.add("issues__list__details__guide-links");
+    const title = document.createElement("strong");
+    title.innerText = "\u041c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u044b Doka:";
+    container.appendChild(title);
+
+    const list = document.createElement("ul");
+    links.forEach(link => {
+        const item = document.createElement("li");
+        const anchor = document.createElement("a");
+        anchor.href = link.url;
+        anchor.target = "_blank";
+        anchor.rel = "noopener noreferrer";
+        anchor.innerText = link.title;
+        item.appendChild(anchor);
+        list.appendChild(item);
+    });
+    container.appendChild(list);
+    return container;
+}
+
 
 
 function generateIssue(position, issue){
@@ -166,6 +193,10 @@ function generateIssue(position, issue){
             contrastParametersContainer.appendChild(suggestionDiv);
         }
     }
+    const guideLinksElement = createGuideLinksElement(issue);
+    if (guideLinksElement) {
+        details_contained.appendChild(guideLinksElement);
+    }
     details.appendChild(details_contained);
     return details;
 }
@@ -276,6 +307,7 @@ function translateCategory(category) {
     return ({
         images: "изображения",
         language: "язык страницы",
+        "language-parts": "язык частей контента",
         headings: "заголовки",
         forms: "формы",
         contrast: "контраст",
@@ -285,6 +317,16 @@ function translateCategory(category) {
         navigation: "навигация",
         links: "ссылки",
         interactive: "интерактивные элементы",
+        syntax: "синтаксис",
+        "page-title": "заголовок страницы",
+        "non-text-contrast": "контраст нетекстовой информации",
+        "text-spacing": "интервалы текста",
+        "hover-focus-content": "контент при наведении и фокусе",
+        "focus-order": "порядок фокуса",
+        "keyboard-traps": "клавиатурные ловушки",
+        "label-in-name": "метка в названии",
+        "status-messages": "статусные сообщения",
+        "form-assistance": "помощь при вводе",
         system: "система",
         general: "общее"
     })[category] || (category || "неизвестно");

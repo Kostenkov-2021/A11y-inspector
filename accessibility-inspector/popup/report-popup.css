@@ -112,6 +112,8 @@ body{
     font-size: 0.875em;
     border: 1px solid #e1e1e1;
     margin-bottom: .5rem;
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 
 .issues__list__details__container {
@@ -119,6 +121,35 @@ body{
     display: flex;
     flex-direction: column;
 }
+
+.issues__list__details__guide-links {
+    margin-top: .75rem;
+    padding: .75rem;
+    background-color: #e8f0fe;
+    border-radius: 4px;
+}
+
+.issues__list__details__guide-links ul {
+    margin: .4rem 0 0;
+    padding-left: 1.2rem;
+}
+
+.issues__list__details__guide-links a {
+    color: #174ea6;
+}
+
+.issues__list__details__extra {
+    margin-top: .75rem;
+}
+
+.issues__list__details__extra dl {
+    margin: .4rem 0 0;
+}
+
+.issues__list__details__extra dd {
+    margin: 0 0 .35rem 1rem;
+}
+
 .hidden {
     display: none;
 }

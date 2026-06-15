@@ -16,7 +16,182 @@ const formatSelectedPreviewContainers = {
     "json": document.getElementById("report-content--json")
 };
 
+function getGuideLinksForIssue(issue) {
+    if (Array.isArray(issue?.guideLinks)) return issue.guideLinks;
+    return typeof DokaGuideLinks !== "undefined" && typeof DokaGuideLinks.getLinks === "function"
+        ? DokaGuideLinks.getLinks(issue)
+        : [];
+}
+
+function prepareReportForStandalone(reportData) {
+    if (!reportData) return reportData;
+    return {
+        ...reportData,
+        issues: (reportData.issues || []).map(issue => ({
+            ...issue,
+            guideLinks: getGuideLinksForIssue(issue)
+        }))
+    };
+}
+
+function formatGuideLinksMarkdown(issue) {
+    const links = getGuideLinksForIssue(issue);
+    if (!links.length) return "";
+    return "\n**\u041c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u044b Doka:**\n" + links.map(link => `- [${link.title}](${link.url})\n`).join("");
+}
+
+function createDetailsListElement(details) {
+    const entries = Object.entries(details || {});
+    if (!entries.length) return null;
+
+    const container = document.createElement("div");
+    container.classList.add("issues__list__details__extra");
+    const title = document.createElement("strong");
+    title.innerText = "Подробности:";
+    container.appendChild(title);
+
+    const list = document.createElement("dl");
+    entries.forEach(([key, value]) => {
+        const term = document.createElement("dt");
+        term.innerText = translateDetailKey(key) + ":";
+        const description = document.createElement("dd");
+        description.innerText = formatDetailValue(value, key);
+        list.appendChild(term);
+        list.appendChild(description);
+    });
+
+    container.appendChild(list);
+    return container;
+}
+
+function formatDetailsMarkdown(details) {
+    const entries = Object.entries(details || {});
+    if (!entries.length) return "\n#### Подробности\n\nДополнительные сведения отсутствуют\n";
+    return "\n#### Подробности\n\n" + entries.map(([key, value]) => `- **${translateDetailKey(key)}:** ${formatDetailValue(value, key)}\n`).join("");
+}
+
+function formatElementMarkdown(element) {
+    const fence = String(element).includes("```") ? "````" : "```";
+    return `**Код элемента:**\n${fence}\n${element}\n${fence}\n`;
+}
+
+function formatDetailValue(value, key = "") {
+    if (value === null || value === undefined || value === "") return "не указано";
+    if (Array.isArray(value)) return value.length ? value.map(item => formatDetailValue(item, key)).join("; ") : "нет данных";
+    if (typeof value === "object") {
+        return Object.entries(value)
+            .map(([itemKey, itemValue]) => `${translateDetailKey(itemKey)}: ${formatDetailValue(itemValue, itemKey)}`)
+            .join("; ");
+    }
+    if (typeof value === "boolean") return value ? "да" : "нет";
+    if (["issue", "reason", "problem", "check"].includes(key)) return translateDetailCode(value);
+    if (key === "improvement") return ({ darken: "сделать текст темнее", lighten: "сделать текст светлее", error: "не удалось подобрать улучшение" })[value] || String(value);
+    return String(value);
+}
+
+function translateDetailCode(value) {
+    return ({
+        "required-field-without-instruction": "обязательное поле без инструкции",
+        "broken-aria-describedby": "aria-describedby ссылается на несуществующий элемент",
+        "broken-aria-errormessage": "aria-errormessage ссылается на несуществующий элемент",
+        "visual-error-without-aria-invalid": "визуальная ошибка без aria-invalid",
+        "invalid-field-without-error-description": "ошибочное поле без связанного описания ошибки",
+        "invalid-field-without-correction-suggestion": "ошибочное поле без подсказки по исправлению",
+        "input-constraint-without-instruction": "ограничение ввода без инструкции",
+        "unassociated-error-message": "текст ошибки не связан с полем",
+        "native-title-tooltip": "нативная подсказка title",
+        "not-hoverable": "контент недоступен при наведении",
+        "no-visible-dismiss": "нет видимого способа закрытия",
+        "hover-only-trigger": "триггер доступен только при наведении",
+        "controlled-popup-not-hoverable": "связанный всплывающий контент недоступен при наведении",
+        "positive-tabindex": "положительный tabindex",
+        "focus-moves-to-earlier-visual-row": "фокус переходит на визуально более раннюю строку",
+        "focus-moves-backward-on-same-row": "фокус движется назад в той же визуальной строке",
+        "potential-focus-trap-without-exit": "возможная клавиатурная ловушка без выхода",
+        "tab-boundary-cancelled-without-exit": "Tab перехватывается на границе без выхода",
+        "element-cancels-tab-both-directions": "элемент перехватывает Tab и Shift+Tab",
+        "visible-label-not-in-accessible-name": "видимая метка не входит в доступное имя",
+        "invalid-aria-live": "недопустимое значение aria-live",
+        "invalid-aria-atomic": "недопустимое значение aria-atomic",
+        "alert-live-off": "role=\"alert\" отключён через aria-live=\"off\"",
+        "status-live-off": "role=\"status\" отключён через aria-live=\"off\"",
+        "live-region-aria-hidden": "динамическая область скрыта от вспомогательных технологий",
+        "empty-hidden-live-region": "пустая скрытая динамическая область",
+        "error-message-not-assertive": "ошибка не объявляется в assertive-режиме",
+        "status-message-without-live-region": "статусное сообщение без динамической области",
+        "unannounced-status-container": "статусный контейнер не объявляется вспомогательными технологиями",
+        "empty-id": "пустой id",
+        "id-contains-whitespace": "id содержит пробельные символы",
+        "duplicate-id": "дублирующийся id",
+        "empty-id-reference": "пустая ссылка на id",
+        "single-id-reference-has-multiple-values": "атрибут должен ссылаться только на один id",
+        "broken-aria-id-reference": "ARIA-атрибут ссылается на несуществующий id",
+        "broken-label-for-reference": "label[for] ссылается на несуществующий id",
+        "broken-list-reference": "атрибут list ссылается на несуществующий datalist",
+        "broken-table-headers-reference": "атрибут headers ссылается на несуществующий заголовок",
+        "broken-fragment-reference": "якорная ссылка ведёт на несуществующий id",
+        "different-language-without-lang": "фрагмент на другом языке без lang"
+    })[value] || String(value);
+}
+
+function translateDetailKey(key) {
+    return ({
+        criterion: "Критерий",
+        issue: "Проблема",
+        expected: "Ожидаемое исправление",
+        currentAutocomplete: "Текущее значение autocomplete",
+        expectedAutocomplete: "Ожидаемое значение autocomplete",
+        fieldText: "Текст поля",
+        accessibleName: "Доступное имя",
+        describedByText: "Текст aria-describedby",
+        ariaDescribedBy: "Значение aria-describedby",
+        ariaErrorMessage: "Значение aria-errormessage",
+        missingIds: "Отсутствующие id",
+        missingId: "Отсутствующий id",
+        attribute: "Атрибут",
+        value: "Значение",
+        role: "Роль",
+        ariaLive: "Значение aria-live",
+        ariaAtomic: "Значение aria-atomic",
+        ariaHidden: "Значение aria-hidden",
+        selector: "Селектор",
+        text: "Текст",
+        sample: "Фрагмент текста",
+        pageLang: "Язык страницы",
+        detectedLang: "Определённый язык",
+        detectedIso3: "Код языка ISO 639-3",
+        confidence: "Уверенность определения",
+        alternatives: "Альтернативы",
+        tabIndex: "Значение tabindex",
+        previousElement: "Предыдущий элемент",
+        currentElement: "Текущий элемент",
+        previousRect: "Область предыдущего элемента",
+        currentRect: "Область текущего элемента",
+        visibleLabel: "Видимая метка",
+        accessibleLabel: "Доступная метка",
+        controlColor: "Цвет элемента управления",
+        borderColor: "Цвет границы",
+        outlineColor: "Цвет обводки",
+        shadowColor: "Цвет тени",
+        graphicColor: "Цвет графики",
+        backgroundColor: "Цвет фона",
+        textColor: "Цвет текста",
+        ratio: "Контраст",
+        requiredRatio: "Требуемый контраст",
+        fontSize: "Размер шрифта",
+        fontWeight: "Насыщенность шрифта",
+        detectedErrorText: "Найдённый текст ошибки",
+        linkedErrorText: "Связанный текст ошибки",
+        constraints: "Ограничения ввода",
+        scrollWidth: "Ширина прокрутки",
+        clientWidth: "Видимая ширина",
+        scrollHeight: "Высота прокрутки",
+        clientHeight: "Видимая высота"
+    })[key] || key;
+}
+
 function downloadAsHTML(reportData){
+    const standaloneReportData = prepareReportForStandalone(reportData);
     
     const styles = `
     body{
@@ -140,6 +315,35 @@ function downloadAsHTML(reportData){
     display: flex;
     flex-direction: column;
 }
+
+.issues__list__details__guide-links {
+    margin-top: .75rem;
+    padding: .75rem;
+    background-color: #e8f0fe;
+    border-radius: 4px;
+}
+
+.issues__list__details__guide-links ul {
+    margin: .4rem 0 0;
+    padding-left: 1.2rem;
+}
+
+.issues__list__details__guide-links a {
+    color: #174ea6;
+}
+
+.issues__list__details__extra {
+    margin-top: .75rem;
+}
+
+.issues__list__details__extra dl {
+    margin: .4rem 0 0;
+}
+
+.issues__list__details__extra dd {
+    margin: 0 0 .35rem 1rem;
+}
+
 .hidden {
     display: none;
 }
@@ -325,6 +529,31 @@ function createPairConstructElement(title, value, colorValue){
     return colorDiv;
 }
 
+function createGuideLinksElement(issue) {
+    const links = Array.isArray(issue.guideLinks) ? issue.guideLinks : [];
+    if (!links.length) return null;
+
+    const container = document.createElement("div");
+    container.classList.add("issues__list__details__guide-links");
+    const title = document.createElement("strong");
+    title.innerText = "\u041c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u044b Doka:";
+    container.appendChild(title);
+
+    const list = document.createElement("ul");
+    links.forEach(link => {
+        const item = document.createElement("li");
+        const anchor = document.createElement("a");
+        anchor.href = link.url;
+        anchor.target = "_blank";
+        anchor.rel = "noopener noreferrer";
+        anchor.innerText = link.title;
+        item.appendChild(anchor);
+        list.appendChild(item);
+    });
+    container.appendChild(list);
+    return container;
+}
+
 
 
 function generateIssue(position, issue){
@@ -452,6 +681,15 @@ function generateIssue(position, issue){
                     "Предлагаемый контраст", issue.details.suggestions.suggestedRatio))
             contrastParametersContainer.appendChild(suggestionDiv);
         }
+    } else if (issue.details) {
+        const detailsListElement = createDetailsListElement(issue.details);
+        if (detailsListElement) {
+            details_contained.appendChild(detailsListElement);
+        }
+    }
+    const guideLinksElement = createGuideLinksElement(issue);
+    if (guideLinksElement) {
+        details_contained.appendChild(guideLinksElement);
     }
     details.appendChild(details_contained);
     return details;
@@ -563,6 +801,7 @@ function translateCategory(category) {
     return ({
         images: "изображения",
         language: "язык страницы",
+        "language-parts": "язык частей контента",
         headings: "заголовки",
         forms: "формы",
         contrast: "контраст",
@@ -572,6 +811,16 @@ function translateCategory(category) {
         navigation: "навигация",
         links: "ссылки",
         interactive: "интерактивные элементы",
+        syntax: "синтаксис",
+        "page-title": "заголовок страницы",
+        "non-text-contrast": "контраст нетекстовой информации",
+        "text-spacing": "интервалы текста",
+        "hover-focus-content": "контент при наведении и фокусе",
+        "focus-order": "порядок фокуса",
+        "keyboard-traps": "клавиатурные ловушки",
+        "label-in-name": "метка в названии",
+        "status-messages": "статусные сообщения",
+        "form-assistance": "помощь при вводе",
         system: "система",
         general: "общее"
     })[category] || (category || "неизвестно");
@@ -645,7 +894,7 @@ function translateContrastScore(score) {
             </div>
             <div id="issues__list"></div>
         </main>
-        <script>let currentReport = ${JSON.stringify(reportData)};</script>
+        <script>let currentReport = ${JSON.stringify(standaloneReportData)};</script>
         <script>${script}</script>
         <script>init(currentReport);</script>
 </body>
@@ -664,6 +913,7 @@ function translateCategory(category) {
     return ({
         images: "изображения",
         language: "язык страницы",
+        "language-parts": "язык частей контента",
         headings: "заголовки",
         forms: "формы",
         contrast: "контраст",
@@ -673,6 +923,16 @@ function translateCategory(category) {
         navigation: "навигация",
         links: "ссылки",
         interactive: "интерактивные элементы",
+        syntax: "синтаксис",
+        "page-title": "заголовок страницы",
+        "non-text-contrast": "контраст нетекстовой информации",
+        "text-spacing": "интервалы текста",
+        "hover-focus-content": "контент при наведении и фокусе",
+        "focus-order": "порядок фокуса",
+        "keyboard-traps": "клавиатурные ловушки",
+        "label-in-name": "метка в названии",
+        "status-messages": "статусные сообщения",
+        "form-assistance": "помощь при вводе",
         system: "система",
         general: "общее"
     })[category] || (category || "неизвестно");
@@ -737,7 +997,7 @@ function parseReportAsMarkdwon(reportData){
         _report += "**Категория:** " + translateCategory(item.category) + "\n"
         _report += "**Сообщение:** " + item.message + "\n";
         _report += item.selector ? "**Селектор:** " + item.selector + "\n" : "";
-        _report += item.element ? "**Код элемента:**\n```\n" + item.element + "\n```\n" : "";
+        _report += item.element ? formatElementMarkdown(item.element) : "";
         if (item.category === "contrast"){
             _report += "#### Параметры контраста\n\n";
             _report += "**Оценка:** " + translateContrastScore(item.details.suggestions.score) + "\n";
@@ -759,7 +1019,10 @@ function parseReportAsMarkdwon(reportData){
             _report += " - **RGB:** " + item.details.suggestions.suggested + "\n";
             _report += " - **HEX:** " + item.details.suggestions.suggestedHex + "\n\n";
             _report += "**Контраст:** " + item.details.suggestions.suggestedRatio + "\n";
+        } else if (item.details) {
+            _report += formatDetailsMarkdown(item.details);
         }
+        _report += formatGuideLinksMarkdown(item);
         _report += "\n------------\n";
     });
 
@@ -777,7 +1040,7 @@ function showInMarkdownFormat(reportData){
 document.addEventListener('DOMContentLoaded', function() {
     
     chrome.storage.local.get("currentReport", (result) => {
-        currentReport = result.currentReport;
+        currentReport = prepareReportForStandalone(result.currentReport);
         init(currentReport);
         showInJsonFormat(currentReport);
         showInMarkdownFormat(currentReport);

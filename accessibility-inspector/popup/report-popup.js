@@ -38,6 +38,169 @@ function createPairConstructElement(title, value, colorValue){
     return colorDiv;
 }
 
+function createGuideLinksElement(issue) {
+    const links = typeof DokaGuideLinks !== "undefined" && typeof DokaGuideLinks.getLinks === "function"
+        ? DokaGuideLinks.getLinks(issue)
+        : [];
+    if (!links.length) return null;
+
+    const container = document.createElement("div");
+    container.classList.add("issues__list__details__guide-links");
+    const title = document.createElement("strong");
+    title.innerText = "\u041c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u044b Doka:";
+    container.appendChild(title);
+
+    const list = document.createElement("ul");
+    links.forEach(link => {
+        const item = document.createElement("li");
+        const anchor = document.createElement("a");
+        anchor.href = link.url;
+        anchor.target = "_blank";
+        anchor.rel = "noopener noreferrer";
+        anchor.innerText = link.title;
+        item.appendChild(anchor);
+        list.appendChild(item);
+    });
+    container.appendChild(list);
+    return container;
+}
+
+function createDetailsListElement(details) {
+    const entries = Object.entries(details || {});
+    if (!entries.length) return null;
+
+    const container = document.createElement("div");
+    container.classList.add("issues__list__details__extra");
+    const title = document.createElement("strong");
+    title.innerText = "Подробности:";
+    container.appendChild(title);
+
+    const list = document.createElement("dl");
+    entries.forEach(([key, value]) => {
+        const term = document.createElement("dt");
+        term.innerText = translateDetailKey(key) + ":";
+        const description = document.createElement("dd");
+        description.innerText = formatDetailValue(value, key);
+        list.appendChild(term);
+        list.appendChild(description);
+    });
+    container.appendChild(list);
+    return container;
+}
+
+function formatDetailValue(value, key = "") {
+    if (value === null || value === undefined || value === "") return "не указано";
+    if (Array.isArray(value)) return value.length ? value.map(item => formatDetailValue(item, key)).join("; ") : "нет данных";
+    if (typeof value === "object") {
+        return Object.entries(value).map(([itemKey, itemValue]) => `${translateDetailKey(itemKey)}: ${formatDetailValue(itemValue, itemKey)}`).join("; ");
+    }
+    if (typeof value === "boolean") return value ? "да" : "нет";
+    if (["issue", "reason", "problem", "check"].includes(key)) return translateDetailCode(value);
+    if (key === "improvement") return ({ darken: "сделать текст темнее", lighten: "сделать текст светлее", error: "не удалось подобрать улучшение" })[value] || String(value);
+    return String(value);
+}
+
+function translateDetailCode(value) {
+    return ({
+        "required-field-without-instruction": "обязательное поле без инструкции",
+        "broken-aria-describedby": "aria-describedby ссылается на несуществующий элемент",
+        "broken-aria-errormessage": "aria-errormessage ссылается на несуществующий элемент",
+        "visual-error-without-aria-invalid": "визуальная ошибка без aria-invalid",
+        "invalid-field-without-error-description": "ошибочное поле без связанного описания ошибки",
+        "invalid-field-without-correction-suggestion": "ошибочное поле без подсказки по исправлению",
+        "input-constraint-without-instruction": "ограничение ввода без инструкции",
+        "unassociated-error-message": "текст ошибки не связан с полем",
+        "native-title-tooltip": "нативная подсказка title",
+        "not-hoverable": "контент недоступен при наведении",
+        "no-visible-dismiss": "нет видимого способа закрытия",
+        "hover-only-trigger": "триггер доступен только при наведении",
+        "controlled-popup-not-hoverable": "связанный всплывающий контент недоступен при наведении",
+        "positive-tabindex": "положительный tabindex",
+        "focus-moves-to-earlier-visual-row": "фокус переходит на визуально более раннюю строку",
+        "focus-moves-backward-on-same-row": "фокус движется назад в той же визуальной строке",
+        "potential-focus-trap-without-exit": "возможная клавиатурная ловушка без выхода",
+        "tab-boundary-cancelled-without-exit": "Tab перехватывается на границе без выхода",
+        "element-cancels-tab-both-directions": "элемент перехватывает Tab и Shift+Tab",
+        "visible-label-not-in-accessible-name": "видимая метка не входит в доступное имя",
+        "invalid-aria-live": "недопустимое значение aria-live",
+        "invalid-aria-atomic": "недопустимое значение aria-atomic",
+        "alert-live-off": "role=\"alert\" отключён через aria-live=\"off\"",
+        "status-live-off": "role=\"status\" отключён через aria-live=\"off\"",
+        "live-region-aria-hidden": "динамическая область скрыта от вспомогательных технологий",
+        "empty-hidden-live-region": "пустая скрытая динамическая область",
+        "error-message-not-assertive": "ошибка не объявляется в assertive-режиме",
+        "status-message-without-live-region": "статусное сообщение без динамической области",
+        "unannounced-status-container": "статусный контейнер не объявляется вспомогательными технологиями",
+        "empty-id": "пустой id",
+        "id-contains-whitespace": "id содержит пробельные символы",
+        "duplicate-id": "дублирующийся id",
+        "empty-id-reference": "пустая ссылка на id",
+        "single-id-reference-has-multiple-values": "атрибут должен ссылаться только на один id",
+        "broken-aria-id-reference": "ARIA-атрибут ссылается на несуществующий id",
+        "broken-label-for-reference": "label[for] ссылается на несуществующий id",
+        "broken-list-reference": "атрибут list ссылается на несуществующий datalist",
+        "broken-table-headers-reference": "атрибут headers ссылается на несуществующий заголовок",
+        "broken-fragment-reference": "якорная ссылка ведёт на несуществующий id",
+        "different-language-without-lang": "фрагмент на другом языке без lang"
+    })[value] || String(value);
+}
+
+function translateDetailKey(key) {
+    return ({
+        criterion: "Критерий",
+        issue: "Проблема",
+        expected: "Ожидаемое исправление",
+        currentAutocomplete: "Текущее значение autocomplete",
+        expectedAutocomplete: "Ожидаемое значение autocomplete",
+        fieldText: "Текст поля",
+        accessibleName: "Доступное имя",
+        describedByText: "Текст aria-describedby",
+        ariaDescribedBy: "Значение aria-describedby",
+        ariaErrorMessage: "Значение aria-errormessage",
+        missingIds: "Отсутствующие id",
+        missingId: "Отсутствующий id",
+        attribute: "Атрибут",
+        value: "Значение",
+        role: "Роль",
+        ariaLive: "Значение aria-live",
+        ariaAtomic: "Значение aria-atomic",
+        ariaHidden: "Значение aria-hidden",
+        selector: "Селектор",
+        text: "Текст",
+        sample: "Фрагмент текста",
+        pageLang: "Язык страницы",
+        detectedLang: "Определённый язык",
+        detectedIso3: "Код языка ISO 639-3",
+        confidence: "Уверенность определения",
+        alternatives: "Альтернативы",
+        tabIndex: "Значение tabindex",
+        previousElement: "Предыдущий элемент",
+        currentElement: "Текущий элемент",
+        previousRect: "Область предыдущего элемента",
+        currentRect: "Область текущего элемента",
+        visibleLabel: "Видимая метка",
+        accessibleLabel: "Доступная метка",
+        controlColor: "Цвет элемента управления",
+        borderColor: "Цвет границы",
+        outlineColor: "Цвет обводки",
+        shadowColor: "Цвет тени",
+        graphicColor: "Цвет графики",
+        backgroundColor: "Цвет фона",
+        textColor: "Цвет текста",
+        ratio: "Контраст",
+        requiredRatio: "Требуемый контраст",
+        fontSize: "Размер шрифта",
+        fontWeight: "Насыщенность шрифта",
+        detectedErrorText: "Найдённый текст ошибки",
+        linkedErrorText: "Связанный текст ошибки",
+        constraints: "Ограничения ввода",
+        scrollWidth: "Ширина прокрутки",
+        clientWidth: "Видимая ширина",
+        scrollHeight: "Высота прокрутки",
+        clientHeight: "Видимая высота"
+    })[key] || key;
+}
+
 
 
 function generateIssue(position, issue){
@@ -165,6 +328,15 @@ function generateIssue(position, issue){
                     "Предлагаемый контраст", issue.details.suggestions.suggestedRatio))
             contrastParametersContainer.appendChild(suggestionDiv);
         }
+    } else if (issue.details) {
+        const detailsListElement = createDetailsListElement(issue.details);
+        if (detailsListElement) {
+            details_contained.appendChild(detailsListElement);
+        }
+    }
+    const guideLinksElement = createGuideLinksElement(issue);
+    if (guideLinksElement) {
+        details_contained.appendChild(guideLinksElement);
     }
     details.appendChild(details_contained);
     return details;
@@ -276,6 +448,7 @@ function translateCategory(category) {
     return ({
         images: "изображения",
         language: "язык страницы",
+        "language-parts": "язык частей контента",
         headings: "заголовки",
         forms: "формы",
         contrast: "контраст",
@@ -285,6 +458,16 @@ function translateCategory(category) {
         navigation: "навигация",
         links: "ссылки",
         interactive: "интерактивные элементы",
+        syntax: "синтаксис",
+        "page-title": "заголовок страницы",
+        "non-text-contrast": "контраст нетекстовой информации",
+        "text-spacing": "интервалы текста",
+        "hover-focus-content": "контент при наведении и фокусе",
+        "focus-order": "порядок фокуса",
+        "keyboard-traps": "клавиатурные ловушки",
+        "label-in-name": "метка в названии",
+        "status-messages": "статусные сообщения",
+        "form-assistance": "помощь при вводе",
         system: "система",
         general: "общее"
     })[category] || (category || "неизвестно");

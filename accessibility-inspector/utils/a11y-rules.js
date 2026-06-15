@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Accessibility rules definitions and utilities
  * Modular system for defining and applying accessibility checks
  */
@@ -208,7 +208,7 @@ const A11yRuleUtils = {
           type: rule.type,
           category: rule.category,
           message: rule.message,
-          element: element.outerHTML.slice(0, 100),
+          element: element.outerHTML,
           selector: this.getElementSelector(element)
         });
       }

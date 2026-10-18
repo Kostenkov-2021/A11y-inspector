@@ -212,6 +212,7 @@ class ReportGenerator {
         <h2>Сводка</h2>
         <p><strong>URL:</strong> ${this.escapeHtml(data.url || 'неизвестно')}</p>
         <p><strong>Дата:</strong> ${new Date(data.timestamp || Date.now()).toLocaleString('ru-RU')}</p>
+        ${typeof A11yReportCoverage !== 'undefined' && data.coverage ? `<p>${this.escapeHtml(A11yReportCoverage.describe(data.coverage)).replace(/\n/g, '<br>')}</p>` : ''}
         
         <div class="summary-stats">
           <div class="stat">
@@ -284,6 +285,7 @@ class ReportGenerator {
       return `
       <div class="details">
         <strong>Параметры контраста:</strong><br>
+        ${details['Результат'] ? `<strong>Результат:</strong> ${this.escapeHtml(details['Результат'])}<br>` : ''}
         <strong>Контраст:</strong> ${details.ratio}:1 (требуется: ${details.requiredRatio || 'н/д'}:1)<br>
         ${details.fontSize ? `<strong>Размер шрифта:</strong> ${details.fontSize}` : ''}
         ${details.fontWeight ? `<strong>Насыщенность шрифта:</strong> ${details.fontWeight}` : ''}
@@ -337,6 +339,9 @@ class ReportGenerator {
     
     text += `URL: ${data.url || 'неизвестно'}\n`;
     text += `Дата: ${new Date(data.timestamp || Date.now()).toLocaleString('ru-RU')}\n\n`;
+    if (typeof A11yReportCoverage !== 'undefined' && data.coverage) {
+      text += A11yReportCoverage.describe(data.coverage) + '\n\n';
+    }
     
     text += 'СВОДКА:\n';
     text += `- Всего проблем: ${summary.total}\n`;
@@ -423,6 +428,10 @@ class ReportGenerator {
       'page-title': 'заголовок страницы',
       'non-text-contrast': 'контраст нетекстовой информации',
       'text-spacing': 'интервалы текста',
+      reflow: 'адаптация контента',
+      'text-resize': 'увеличение текста',
+      'focus-visibility': 'видимость фокуса',
+      'interaction': 'интерактивные сценарии',
       'hover-focus-content': 'контент при наведении и фокусе',
       'focus-order': 'порядок фокуса',
       'keyboard-traps': 'клавиатурные ловушки',

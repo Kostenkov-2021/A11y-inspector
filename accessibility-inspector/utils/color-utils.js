@@ -90,9 +90,12 @@ static rgbToHex(r, g, b) {
         return {
           current: this.rgbToString(currentRgb),
           suggested: this.rgbToString(currentRgb),
+          currentHex: this.rgbToHex(currentRgb.r, currentRgb.g, currentRgb.b),
+          suggestedHex: this.rgbToHex(currentRgb.r, currentRgb.g, currentRgb.b),
           currentRatio: currentRatio,
           suggestedRatio: currentRatio,
-          improvement: 'none'
+          improvement: 'none',
+          score: this.getContrastScore(currentRatio, targetRatio === 3 ? 24 : 16)
         };
       }
       
@@ -100,14 +103,19 @@ static rgbToHex(r, g, b) {
       let improvement;
       
       if (currentLuminance > backgroundLuminance) {
-        // If text is lighter than background - darken
-        suggestedRgb = this.findOptimalColor(currentRgb, backgroundRgb, targetRatio, 'darken');
-        improvement = 'darken';
-      } else {
-        // If text is darker than background - lighten
+        // Increase the luminance difference between text and background.
         suggestedRgb = this.findOptimalColor(currentRgb, backgroundRgb, targetRatio, 'lighten');
         improvement = 'lighten';
+      } else {
+        suggestedRgb = this.findOptimalColor(currentRgb, backgroundRgb, targetRatio, 'darken');
+        improvement = 'darken';
       }
+
+      if (!suggestedRgb) {
+        improvement = improvement === 'darken' ? 'lighten' : 'darken';
+        suggestedRgb = this.findOptimalColor(currentRgb, backgroundRgb, targetRatio, improvement);
+      }
+      if (!suggestedRgb) throw new Error('Не удалось подобрать цвет с требуемым контрастом');
       
       const suggestedRatio = this.calculateContrastRatio(suggestedRgb, backgroundRgb);
       
@@ -119,7 +127,7 @@ static rgbToHex(r, g, b) {
         currentRatio: currentRatio,
         suggestedRatio: suggestedRatio,
         improvement: improvement,
-        score: this.getContrastScore(suggestedRatio)
+        score: this.getContrastScore(suggestedRatio, targetRatio === 3 ? 24 : 16)
       };
     } catch (error) {
       console.error('Ошибка в suggestContrastImprovements:', error);
@@ -140,11 +148,16 @@ static rgbToHex(r, g, b) {
    * @param {Object} backgroundRgb - Background color
    * @param {number} targetRatio - Target contrast ratio
    * @param {string} operation - Operation type (darken/lighten)
-   * @returns {Object} Optimal RGB color
+   * @returns {Object|null} Optimal RGB color, or null if the target is unreachable
    */
   static findOptimalColor(colorRgb, backgroundRgb, targetRatio, operation) {
-    let optimalColor = { ...colorRgb };
-    let currentRatio = this.calculateContrastRatio(optimalColor, backgroundRgb);
+    const transform = operation === 'darken' ? this.darkenColor : this.lightenColor;
+    const rounded = factor => {
+      const color = transform.call(this, colorRgb, factor);
+      return { r: Math.round(color.r), g: Math.round(color.g), b: Math.round(color.b) };
+    };
+    let optimalColor = rounded(1);
+    if (this.calculateContrastRatio(optimalColor, backgroundRgb) < targetRatio) return null;
     
     // Binary search for optimal color
     let min = 0;
@@ -152,21 +165,15 @@ static rgbToHex(r, g, b) {
     const maxIterations = 20;
     let iteration = 0;
     
-    while (iteration < maxIterations && currentRatio < targetRatio) {
+    while (iteration < maxIterations) {
       const factor = (min + max) / 2;
       
-      let testColor;
-      if (operation === 'darken') {
-        testColor = this.darkenColor(colorRgb, factor);
-      } else {
-        testColor = this.lightenColor(colorRgb, factor);
-      }
+      const testColor = rounded(factor);
       
       const testRatio = this.calculateContrastRatio(testColor, backgroundRgb);
       
       if (testRatio >= targetRatio) {
         optimalColor = testColor;
-        currentRatio = testRatio;
         max = factor; // Reduce factor since we reached target
       } else {
         min = factor; // Increase factor
@@ -234,7 +241,7 @@ static rgbToHex(r, g, b) {
     
     const [r, g, b] = [rgb.r, rgb.g, rgb.b].map(component => {
       component = component / 255;
-      return component <= 0.03928 
+      return component <= 0.04045
         ? component / 12.92 
         : Math.pow((component + 0.055) / 1.055, 2.4);
     });
@@ -271,12 +278,12 @@ static rgbToHex(r, g, b) {
    */
   static parseRgbColor(color) {
     // Support for rgb and rgba
-    const match = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)/i);
+    const match = color.match(/rgba?\(([\d.]+),\s*([\d.]+),\s*([\d.]+)(?:,\s*[\d.]+)?\)/i);
     if (match) {
       return {
-        r: parseInt(match[1]),
-        g: parseInt(match[2]),
-        b: parseInt(match[3])
+        r: parseFloat(match[1]),
+        g: parseFloat(match[2]),
+        b: parseFloat(match[3])
       };
     }
     return { r: 0, g: 0, b: 0 };

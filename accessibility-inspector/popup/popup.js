@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // DOM elements
   const urlInput = document.getElementById('url-input');
   const formatSelect = document.getElementById('format-select');
+  const scenarioChecks = document.getElementById('scenario-checks');
   const checkBtn = document.getElementById('check-btn');
   const statusDiv = document.getElementById('status');
   const resultsDiv = document.getElementById('results');
@@ -63,6 +64,19 @@ document.addEventListener('DOMContentLoaded', function() {
   function startCheck() {
     const url = urlInput.value.trim();
     const format = formatSelect.value;
+    const profile = document.getElementById('profile-select').value;
+    const level = document.getElementById('level-select').value;
+    let workflow;
+    try {
+      const source = document.getElementById('workflow-input').value.trim();
+      if (source) {
+        if (!document.getElementById('workflow-consent').checked) throw new Error('Подтвердите разрешение действий сценария');
+        workflow = JSON.parse(source);
+      }
+    } catch (error) {
+      showStatus('Ошибка сценария: ' + error.message, 'error');
+      return;
+    }
 
     if (!url) {
       showStatus('Пожалуйста, введите URL-адрес для проверки', 'error');
@@ -82,7 +96,7 @@ document.addEventListener('DOMContentLoaded', function() {
     hideResults();
 
     chrome.runtime.sendMessage(
-      { action: 'checkAccessibility', url, format },
+      { action: 'checkAccessibility', url, format, scenarios: scenarioChecks.checked, profile, level, workflow },
       handleResponse
     );
   }
@@ -214,6 +228,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <h1>Отчёт о доступности</h1>
         <p><strong>URL:</strong> ${reportData.url || 'Неизвестно'}</p>
         <p><strong>Время проверки:</strong> ${reportData.timestamp || 'Неизвестно'}</p>
+        ${reportData.coverage ? `<p>${escapeHtml(A11yReportCoverage.describe(reportData.coverage)).replace(/\n/g, '<br>')}</p>` : ''}
       </div>
     `;
 
@@ -229,8 +244,8 @@ document.addEventListener('DOMContentLoaded', function() {
               <span class="issue-type">${typeClass === 'error' ? 'Ошибка' : 'Предупреждение'}</span>
               <span class="issue-category">${translateCategory(issue.category)}</span>
             </div>
-            <div class="issue-message">${issue.message || 'Нет описания'}</div>
-            ${issue.selector ? `<div class="issue-selector"><strong>Селектор:</strong> ${issue.selector}</div>` : ''}
+            <div class="issue-message">${escapeHtml(issue.message || 'Нет описания')}</div>
+            ${issue.selector ? `<div class="issue-selector"><strong>Селектор:</strong> ${escapeHtml(issue.selector)}</div>` : ''}
             ${issue.element ? `<div class="issue-element"><strong>Код элемента:</strong><pre><code>${escapeHtml(issue.element)}</code></pre></div>` : ''}
             ${issue.details ? formatDetailsHtml(issue.details) : ''}
             ${formatGuideLinksHtml(issue)}
@@ -246,6 +261,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const report = typeof reportData === 'string' ? JSON.parse(reportData) : reportData;
     const issues = report.issues || [];
     let text = `Отчёт о доступности\nURL: ${report.url || 'Неизвестно'}\nВремя проверки: ${report.timestamp || 'Неизвестно'}\n\n`;
+    if (report.coverage) text += A11yReportCoverage.describe(report.coverage) + '\n\n';
     if (issues.length === 0) text += 'Проблемы доступности не найдены! ✅\n';
     else {
       text += `Найдено проблем: ${issues.length}\n\n`;
@@ -271,6 +287,7 @@ document.addEventListener('DOMContentLoaded', function() {
     _report += "**Всего проблем:** " + data.summary.total + "\n";
     _report += "**Предупреждений:** " + data.summary.warnings + "\n";
     _report += "**Ошибок:** " + data.summary.errors + "\n\n";
+    if (data.coverage) _report += A11yReportCoverage.describe(data.coverage) + '\n\n';
     _report += "## Детализация ошибок \n";
     data.issues.forEach((item, i) => {
         _report += "### **Проблема:** " + (i + 1) + "\n\n";
@@ -279,7 +296,8 @@ document.addEventListener('DOMContentLoaded', function() {
         _report += "**Сообщение:** " + item.message + "\n";
         _report += item.selector ? "**Селектор:** " + item.selector + "\n" : "";
         _report += item.element ? formatElementMarkdown(item.element) : "";
-        if (item.category === "contrast"){
+        if (item.category === "contrast" && item.details?.suggestions){
+            if (item.details['Результат']) _report += "**Результат:** " + item.details['Результат'] + "\n";
             _report += "#### Параметры контраста\n\n";
             _report += "**Оценка:** " + translateContrastScore(item.details.suggestions.score) + "\n";
             _report += "**Улучшение:** " + translateImprovement(item.details.suggestions.improvement) + "\n\n"
@@ -564,6 +582,10 @@ document.addEventListener('DOMContentLoaded', function() {
       'page-title': 'заголовок страницы',
       'non-text-contrast': 'контраст нетекстовой информации',
       'text-spacing': 'интервалы текста',
+      reflow: 'адаптация контента',
+      'text-resize': 'увеличение текста',
+      'focus-visibility': 'видимость фокуса',
+      'interaction': 'интерактивные сценарии',
       'hover-focus-content': 'контент при наведении и фокусе',
       'focus-order': 'порядок фокуса',
       'keyboard-traps': 'клавиатурные ловушки',

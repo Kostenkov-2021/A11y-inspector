@@ -499,6 +499,12 @@ select option:checked {
     const script = `
     var isAllIssuesElementsExpanded = true;
 
+${createDetailsListElement.toString()}
+${formatDetailValue.toString()}
+${translateDetailKey.toString()}
+${translateDetailCode.toString()}
+const A11yReportCoverage = { describe: ${A11yReportCoverage.describe.toString()} };
+
 const popupBodyReport = document.getElementById("popup-body-report");
 
 const summaryUrl = document.getElementById("summary--about--showurl");
@@ -626,11 +632,12 @@ function generateIssue(position, issue){
     }
     
 
-    if (cnt_category == "contrast"){
+    if (cnt_category == "contrast" && issue.details?.suggestions){
         let hrAfterCode = document.createElement("hr");
         hrAfterCode.style = "width: -webkit-fill-available;";
         details_contained.appendChild(hrAfterCode);
         details_contained.appendChild(createPairConstructElement("Параметры контраста"));
+        if (issue.details['Результат']) details_contained.appendChild(createPairConstructElement("Результат", issue.details['Результат']));
 
         let contrastParametersContainer = document.createElement("div");
         contrastParametersContainer.style = "margin-left: .7rem;"
@@ -748,6 +755,11 @@ function init(reportData){
     summaryTotalIssues.innerText = reportData.summary.total;
     summaryWarnings.innerText = reportData.summary.warnings;
     summaryErrors.innerText = reportData.summary.errors;
+      if (reportData.coverage) {
+        const coverage = document.createElement("p");
+        coverage.innerText = A11yReportCoverage.describe(reportData.coverage);
+        summaryTotalIssues.closest("header").appendChild(coverage);
+    }
     showDetailsIssues(reportData.issues);
 
     const issuesElements = document.getElementsByClassName("issues__list__details");
@@ -823,6 +835,10 @@ function translateCategory(category) {
         "page-title": "заголовок страницы",
         "non-text-contrast": "контраст нетекстовой информации",
         "text-spacing": "интервалы текста",
+        reflow: "адаптация контента",
+        "text-resize": "увеличение текста",
+        "focus-visibility": "видимость фокуса",
+        "interaction": "интерактивные сценарии",
         "hover-focus-content": "контент при наведении и фокусе",
         "focus-order": "порядок фокуса",
         "keyboard-traps": "клавиатурные ловушки",
@@ -902,7 +918,7 @@ function translateContrastScore(score) {
             </div>
             <div id="issues__list"></div>
         </main>
-        <script>let currentReport = ${JSON.stringify(standaloneReportData)};</script>
+        <script>let currentReport = ${JSON.stringify(standaloneReportData).replace(/</g, '\\u003c')};</script>
         <script>${script}</script>
         <script>init(currentReport);</script>
 </body>
@@ -935,6 +951,10 @@ function translateCategory(category) {
         "page-title": "заголовок страницы",
         "non-text-contrast": "контраст нетекстовой информации",
         "text-spacing": "интервалы текста",
+        reflow: "адаптация контента",
+        "text-resize": "увеличение текста",
+        "focus-visibility": "видимость фокуса",
+        "interaction": "интерактивные сценарии",
         "hover-focus-content": "контент при наведении и фокусе",
         "focus-order": "порядок фокуса",
         "keyboard-traps": "клавиатурные ловушки",
@@ -998,6 +1018,7 @@ function parseReportAsMarkdwon(reportData){
     _report += "**Всего проблем:** " + reportData.summary.total + "\n";
     _report += "**Предупреждений:** " + reportData.summary.warnings + "\n";
     _report += "**Ошибок:** " + reportData.summary.errors + "\n\n";
+    if (reportData.coverage) _report += A11yReportCoverage.describe(reportData.coverage) + '\n\n';
     _report += "## Детализация ошибок \n";
     reportData.issues.forEach((item, i) => {
         _report += "### **Проблема:** " + (i + 1) + "\n\n";
@@ -1006,7 +1027,8 @@ function parseReportAsMarkdwon(reportData){
         _report += "**Сообщение:** " + item.message + "\n";
         _report += item.selector ? "**Селектор:** " + item.selector + "\n" : "";
         _report += item.element ? formatElementMarkdown(item.element) : "";
-        if (item.category === "contrast"){
+        if (item.category === "contrast" && item.details?.suggestions){
+            if (item.details['Результат']) _report += "**Результат:** " + item.details['Результат'] + "\n";
             _report += "#### Параметры контраста\n\n";
             _report += "**Оценка:** " + translateContrastScore(item.details.suggestions.score) + "\n";
             _report += "**Улучшение:** " + translateImprovement(item.details.suggestions.improvement) + "\n\n"

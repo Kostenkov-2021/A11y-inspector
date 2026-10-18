@@ -19,10 +19,10 @@ function initializeDependencies() {
       window.ColorUtils = {
         calculateContrastRatio: function(color1, color2) {
           // Simple fallback implementation
-          return 4.5; // Default passing ratio
+          throw new Error('Модуль точного расчёта контраста недоступен');
         },
         suggestContrastImprovements: function() {
-          return { currentRatio: 4.5, suggestedRatio: 4.5 };
+          throw new Error('Модуль точного расчёта контраста недоступен');
         }
       };
     }
@@ -63,16 +63,40 @@ initializeDependencies();
  * Main function to run all accessibility checks
  * @returns {Object} Accessibility report with issues and summary
  */
-function runA11yChecks() {
+const a11yScanLimits = new Map();
+
+function limitCheckItems(items, limit, label) {
+  const previous = a11yScanLimits.get(label);
+  a11yScanLimits.set(label, { ...previous, id: label, label, limit, total: Math.max(items.length, previous?.total || 0),
+    processed: Math.max(Math.min(items.length, limit), previous?.processed || 0), truncated: Boolean(items.length > limit || previous?.truncated) });
+  return items.slice(0, limit);
+}
+
+async function runA11yChecks(options = {}) {
+  a11yScanLimits.clear();
+  if (typeof A11yInteractionChecks !== 'undefined') A11yInteractionChecks.resetCoverage();
   console.log('Запуск проверки доступности...');
 
   const issues = [];
+  let standardsResult = null;
+
+  try {
+    standardsResult = await A11yStandardsChecks.run();
+    issues.push(...standardsResult.issues);
+  } catch (error) {
+    issues.push({
+      type: 'warning',
+      category: 'system',
+      message: 'Стандартные проверки не выполнены; использован ограниченный набор резервных правил',
+      details: { 'Причина': error.message }
+    });
+  }
 
   try {
     // Use modular accessibility rules if available
     if (typeof A11yRuleUtils !== 'undefined' && typeof A11yRuleUtils.runAllChecks === 'function') {
       console.log('Для проверок используется A11yRuleUtils');
-      const ruleIssues = A11yRuleUtils.runAllChecks();
+      const ruleIssues = A11yRuleUtils.runAllChecks({ standardsEngine: Boolean(standardsResult) });
       issues.push(...ruleIssues);
     } else {
       console.log('A11yRuleUtils недоступен, запускаются базовые проверки');
@@ -90,7 +114,7 @@ function runA11yChecks() {
     const formAssistanceIssues = checkFormErrorAssistance();
     issues.push(...formAssistanceIssues);
 
-    const contrastIssues = checkColorContrast();
+    const contrastIssues = checkColorContrast(options.level);
     issues.push(...contrastIssues);
 
     const nonTextContrastIssues = checkNonTextContrast();
@@ -105,10 +129,9 @@ function runA11yChecks() {
     const focusOrderIssues = checkFocusOrder();
     issues.push(...focusOrderIssues);
 
-    const keyboardTrapIssues = checkKeyboardTraps();
-    issues.push(...keyboardTrapIssues);
+    // Keyboard traps are inspected by the real debugger traversal, not synthetic Tab events.
 
-    const labelInNameIssues = checkLabelInName();
+    const labelInNameIssues = standardsResult ? [] : checkLabelInName();
     issues.push(...labelInNameIssues);
 
     const statusMessageIssues = checkStatusMessages();
@@ -120,7 +143,7 @@ function runA11yChecks() {
     const ariaCurrentIssues = checkAriaCurrentForActiveItems();
     issues.push(...ariaCurrentIssues);
 
-    const ariaIssues = checkAriaAttributes();
+    const ariaIssues = standardsResult ? [] : checkAriaAttributes();
     issues.push(...ariaIssues);
 
     const keyboardIssues = checkKeyboardNavigation();
@@ -129,11 +152,16 @@ function runA11yChecks() {
     const semanticIssues = checkSemanticMarkup();
     issues.push(...semanticIssues);
 
-    const langIssues = checkLanguage();
+    const langIssues = standardsResult ? [] : checkLanguage();
     issues.push(...langIssues);
 
     const languagePartIssues = checkLanguageOfParts();
     issues.push(...languagePartIssues);
+    if (typeof A11yInteractionChecks !== 'undefined') {
+      const media = A11yInteractionChecks.inspectMedia();
+      issues.push(...media.issues);
+      for (const record of media.limits || []) a11yScanLimits.set(record.id, record);
+    }
 
   } catch (error) {
     console.error('Ошибка во время проверки доступности:', error);
@@ -148,9 +176,11 @@ function runA11yChecks() {
 
   console.log(`Проверка доступности завершена: найдено проблем - ${issues.length}`);
 
-  return {
+  const report = {
     url: window.location.href,
     timestamp: new Date().toISOString(),
+    coverage: { ...(standardsResult ? standardsResult.coverage : { scope: 'Резервные проверки; стандартный набор не выполнен' }),
+      limits: Array.from(a11yScanLimits.values()), status: Array.from(a11yScanLimits.values()).some(record => record.truncated) ? 'incomplete' : 'completed' },
     issues: issues,
     summary: {
       total: issues.length,
@@ -158,6 +188,7 @@ function runA11yChecks() {
       warnings: issues.filter(i => i.type === 'warning').length
     }
   };
+  return typeof A11yAuditResults !== 'undefined' ? A11yAuditResults.normalize(report, options) : report;
 }
 
 /**
@@ -403,7 +434,7 @@ function checkFormErrorAssistance() {
   try {
     const controls = Array.from(document.querySelectorAll('input, select, textarea'));
 
-    controls.slice(0, 1500).forEach(control => {
+    limitCheckItems(controls, 1500, 'Поля помощи при вводе').forEach(control => {
       if (!isFormControlForAssistance(control)) return;
 
       const selector = getSelector(control);
@@ -674,7 +705,7 @@ function checkGlobalFormErrors() {
   const issues = [];
   const errorContainers = Array.from(document.querySelectorAll('[role="alert"], [aria-live], .error, .errors, .invalid-feedback, [class*="error"]'));
 
-  errorContainers.slice(0, 500).forEach(container => {
+  limitCheckItems(errorContainers, 500, 'Контейнеры ошибок форм').forEach(container => {
     if (!isElementVisible(container)) return;
     const text = (container.textContent || '').trim();
     if (!containsErrorText(text)) return;
@@ -704,26 +735,36 @@ function checkGlobalFormErrors() {
 /**
  * Check color contrast for all visible text elements
  */
-function checkColorContrast() {
+function checkColorContrast(level = 'AA') {
   const issues = [];
 
   try {
     // Limit elements for performance on large pages
-    const textElements = getTextElements().slice(0, 1000);
+    const textElements = limitCheckItems(getTextElements(), 1000, 'Текстовые элементы контраста');
 
     textElements.forEach(element => {
       const contrastResult = getContrastRatioForElement(element);
 
-      if (contrastResult && !contrastResult.meetsAA) {
+      if (contrastResult?.incomplete) {
+        issues.push({
+          type: 'warning', outcome: 'not-tested', category: 'contrast',
+          message: 'Требуется ручная проверка контраста: ' + contrastResult.reason,
+          element: element.outerHTML, selector: getSelector(element),
+          details: { criterion: level === 'AAA' ? '1.4.6' : '1.4.3', 'Причина': contrastResult.reason }
+        });
+      } else if (contrastResult && !(level === 'AAA' ? contrastResult.meetsAAA : contrastResult.meetsAA)) {
+        const requiredRatio = level === 'AAA' ? contrastResult.requiredAAARatio : contrastResult.requiredAARatio;
         issues.push({
           type: 'error',
+          outcome: 'violation',
           category: 'contrast',
-          message: `Недостаточный контраст: ${contrastResult.ratio.toFixed(2)}:1 (требуется ${contrastResult.requiredAARatio}:1)`,
+          message: `Недостаточный контраст: ${contrastResult.ratio.toFixed(2)}:1 (требуется ${requiredRatio}:1)`,
           element: element.outerHTML,
           selector: getSelector(element),
           details: {
+            criterion: level === 'AAA' ? '1.4.6' : '1.4.3',
             ratio: contrastResult.ratio.toFixed(2),
-            requiredRatio: contrastResult.requiredAARatio,
+            requiredRatio,
             fontSize: `${contrastResult.fontSize}px`,
             fontWeight: contrastResult.fontWeight,
             textColor: contrastResult.textColor,
@@ -750,8 +791,10 @@ function checkNonTextContrast() {
 
   try {
     const controls = Array.from(document.querySelectorAll('button, [role="button"], input, select, textarea, [tabindex], a[href]'));
-    controls.slice(0, 1000).forEach(control => {
+    limitCheckItems(controls, 1000, 'Контролы нетекстового контраста').forEach(control => {
       if (!isElementVisible(control)) return;
+      const uncertain = getComplexNonTextContrastIssue(control);
+      if (uncertain) { issues.push(uncertain); return; }
 
       const borderIssue = getLowContrastBorderIssue(control, requiredRatio);
       if (borderIssue) {
@@ -765,8 +808,10 @@ function checkNonTextContrast() {
     });
 
     const graphics = Array.from(document.querySelectorAll('svg, svg *, [role="img"]'));
-    graphics.slice(0, 1000).forEach(graphic => {
+    limitCheckItems(graphics, 1000, 'Графика нетекстового контраста').forEach(graphic => {
       if (!isElementVisible(graphic)) return;
+      const uncertain = getComplexNonTextContrastIssue(graphic);
+      if (uncertain) { issues.push(uncertain); return; }
 
       const graphicIssue = getLowContrastGraphicIssue(graphic, requiredRatio);
       if (!graphicIssue) return;
@@ -781,6 +826,17 @@ function checkNonTextContrast() {
   }
 
   return issues;
+}
+
+function getComplexNonTextContrastIssue(element) {
+  const surface = getContrastSurface(element, getComputedStyle(element).color);
+  if (!surface.incomplete) return null;
+  return {
+    type: 'warning', outcome: 'not-tested', category: 'non-text-contrast',
+    message: 'Требуется ручная проверка нетекстового контраста: ' + surface.reason,
+    element: element.outerHTML, selector: getSelector(element),
+    details: { criterion: '1.4.11', 'Причина': surface.reason }
+  };
 }
 
 function getLowContrastBorderIssue(element, requiredRatio) {
@@ -929,7 +985,7 @@ function checkTextSpacingResilience() {
     style.remove();
 
     const newIssues = Array.from(after.values()).filter(item => !before.has(item.selector));
-    newIssues.slice(0, 50).forEach(item => {
+    limitCheckItems(newIssues, 50, 'Замечания интервалов текста').forEach(item => {
       issues.push({
         type: 'warning',
         category: 'text-spacing',
@@ -958,7 +1014,7 @@ function getOverflowingTextSpacingElements() {
   const results = new Map();
   const elements = Array.from(document.body ? document.body.querySelectorAll('*') : []);
 
-  elements.slice(0, 1500).forEach(element => {
+  limitCheckItems(elements, 1500, 'Элементы интервалов текста').forEach(element => {
     if (!isElementVisible(element)) return;
 
     const text = (element.textContent || '').trim();
@@ -996,9 +1052,6 @@ function checkHoverFocusContent() {
   const seen = new Set();
 
   try {
-    const titleIssues = findNativeTitleTooltipIssues();
-    titleIssues.forEach(issue => addUniqueIssue(issues, seen, issue));
-
     const popupIssues = findVisiblePopupContentIssues();
     popupIssues.forEach(issue => addUniqueIssue(issues, seen, issue));
 
@@ -1015,7 +1068,7 @@ function findNativeTitleTooltipIssues() {
   const issues = [];
   const titledElements = Array.from(document.querySelectorAll('[title]'));
 
-  titledElements.slice(0, 500).forEach(element => {
+  limitCheckItems(titledElements, 500, 'Элементы с title').forEach(element => {
     if (!isElementVisible(element)) return;
 
     const title = (element.getAttribute('title') || '').trim();
@@ -1059,7 +1112,7 @@ function findVisiblePopupContentIssues() {
 
   const popups = Array.from(document.querySelectorAll(popupSelectors));
 
-  popups.slice(0, 500).forEach(popup => {
+  limitCheckItems(popups, 500, 'Всплывающие элементы').forEach(popup => {
     if (!isElementVisible(popup) || !isLikelySupplementalPopup(popup)) return;
 
     const style = window.getComputedStyle(popup);
@@ -1117,7 +1170,7 @@ function findMouseOnlyPopupTriggerIssues() {
 
   const triggers = Array.from(document.querySelectorAll(triggerSelectors));
 
-  triggers.slice(0, 700).forEach(trigger => {
+  limitCheckItems(triggers, 700, 'Триггеры всплывающего контента').forEach(trigger => {
     if (!isElementVisible(trigger)) return;
 
     const hasMouseOpen = trigger.hasAttribute('onmouseover') ||
@@ -1242,7 +1295,7 @@ function checkFocusOrder() {
     if (focusableItems.length < 2) return issues;
 
     const positiveTabIndexItems = focusableItems.filter(item => item.tabIndex > 0);
-    positiveTabIndexItems.slice(0, 25).forEach(item => {
+    limitCheckItems(positiveTabIndexItems, 25, 'Замечания положительного tabindex').forEach(item => {
       issues.push({
         type: 'warning',
         category: 'focus-order',
@@ -1260,7 +1313,7 @@ function checkFocusOrder() {
     });
 
     const visualJumps = findSuspiciousFocusJumps(focusableItems);
-    visualJumps.slice(0, 50).forEach(jump => {
+    limitCheckItems(visualJumps, 50, 'Замечания порядка фокуса').forEach(jump => {
       issues.push({
         type: 'warning',
         category: 'focus-order',
@@ -1342,13 +1395,10 @@ function getFocusableOrderItems() {
 
 function isFocusableForOrder(element) {
   if (!isElementVisible(element)) return false;
-  if (element.disabled || element.getAttribute('aria-hidden') === 'true') return false;
+  if (element.disabled || element.closest('[inert]')) return false;
 
   const tabIndexAttr = element.getAttribute('tabindex');
   if (tabIndexAttr !== null && parseInt(tabIndexAttr, 10) < 0) return false;
-
-  const style = window.getComputedStyle(element);
-  if (style.pointerEvents === 'none') return false;
 
   if (isNaturallyFocusable(element)) return true;
   if (element.hasAttribute('tabindex')) return true;
@@ -1518,7 +1568,7 @@ function getFocusTrapScopeIssues(focusableItems) {
 function getTabCancellationIssues(focusableItems) {
   const issues = [];
 
-  focusableItems.slice(0, 300).forEach(item => {
+  limitCheckItems(focusableItems, 300, 'Резервная выборка фокуса').forEach(item => {
     const scope = getPotentialFocusTrapScope(item.element);
     if (scope) return;
 
@@ -1671,7 +1721,7 @@ function checkLabelInName() {
       'button, a[href], [role="button"], [role="link"], [role="menuitem"], [role="tab"], input[type="button"], input[type="submit"], input[type="reset"]'
     ));
 
-    elements.slice(0, 1500).forEach(element => {
+    limitCheckItems(elements, 1500, 'Элементы метки в имени').forEach(element => {
       if (!isElementVisible(element) || isElementDisabled(element)) return;
 
       const visibleLabel = getVisibleControlLabel(element);
@@ -1744,9 +1794,6 @@ function getVisibleTextFromNode(node) {
 }
 
 function getAccessibleNameForControl(element) {
-  const ariaLabel = element.getAttribute('aria-label');
-  if (ariaLabel && ariaLabel.trim()) return normalizeAccessibleText(ariaLabel);
-
   const labelledBy = element.getAttribute('aria-labelledby');
   if (labelledBy) {
     const labelText = labelledBy.split(/\s+/)
@@ -1756,6 +1803,9 @@ function getAccessibleNameForControl(element) {
       .join(' ');
     if (labelText.trim()) return normalizeAccessibleText(labelText);
   }
+
+  const ariaLabel = element.getAttribute('aria-label');
+  if (ariaLabel && ariaLabel.trim()) return normalizeAccessibleText(ariaLabel);
 
   const tag = element.tagName ? element.tagName.toLowerCase() : '';
   const type = (element.getAttribute('type') || '').toLowerCase();
@@ -1817,11 +1867,11 @@ function checkStatusMessages() {
       '[role="status"], [role="alert"], [role="log"], [role="timer"], [role="marquee"], [aria-live]'
     ));
 
-    liveRegions.slice(0, 1000).forEach(region => {
+    limitCheckItems(liveRegions, 1000, 'Динамические области').forEach(region => {
       getLiveRegionIssues(region).forEach(issue => addUniqueIssue(issues, seen, issue));
     });
 
-    findUnannouncedStatusContainers().forEach(issue => addUniqueIssue(issues, seen, issue));
+    // Unannounced status candidates require an observed change, collected by the scenario module.
   } catch (error) {
     console.error('Ошибка проверки статусных сообщений:', error);
   }
@@ -1882,24 +1932,6 @@ function getLiveRegionIssues(region) {
     }));
   }
 
-  if ((role === 'status' || role === 'alert' || ariaLive) && isLiveRegionVisuallyHiddenAndEmpty(region, text)) {
-    issues.push(createStatusMessageIssue(region, {
-      type: 'warning',
-      message: 'Динамическая область пустая и скрыта; убедитесь, что динамические сообщения будут добавляться в этот контейнер',
-      issue: 'empty-hidden-live-region',
-      details: { role, ariaLive, selector }
-    }));
-  }
-
-  if (isLikelyErrorStatus(region, text) && role !== 'alert' && ariaLive !== 'assertive') {
-    issues.push(createStatusMessageIssue(region, {
-      type: 'warning',
-      message: 'Сообщение похоже на ошибку, но не использует режим assertive для динамической области или role="alert"',
-      issue: 'error-message-not-assertive',
-      details: { role, ariaLive, text: text.slice(0, 180) }
-    }));
-  }
-
   if (isLikelySuccessOrProgressStatus(region, text) && !role && !ariaLive) {
     issues.push(createStatusMessageIssue(region, {
       type: 'warning',
@@ -1918,7 +1950,7 @@ function findUnannouncedStatusContainers() {
     '.status, .toast, .notification, .notice, .message, .alert, .success, .error, .warning, [class*="status"], [class*="toast"], [class*="notification"], [class*="message"]'
   ));
 
-  candidates.slice(0, 800).forEach(element => {
+  limitCheckItems(candidates, 800, 'Резервные кандидаты статусов').forEach(element => {
     if (!isElementVisible(element)) return;
     if (element.closest('[role="status"], [role="alert"], [role="log"], [aria-live]')) return;
 
@@ -2004,7 +2036,7 @@ function findDuplicateAndInvalidIds() {
   const idMap = new Map();
   const elementsWithId = Array.from(document.querySelectorAll('[id]'));
 
-  elementsWithId.slice(0, 3000).forEach(element => {
+  limitCheckItems(elementsWithId, 3000, 'Элементы с id').forEach(element => {
     const id = element.getAttribute('id') || '';
     if (!id) {
       issues.push(createSyntaxIssue(element, {
@@ -2032,7 +2064,7 @@ function findDuplicateAndInvalidIds() {
   idMap.forEach((elements, id) => {
     if (elements.length <= 1) return;
 
-    elements.slice(0, 10).forEach((element, index) => {
+    limitCheckItems(elements, 10, 'Повторы одного id').forEach((element, index) => {
       issues.push(createSyntaxIssue(element, {
         type: 'error',
         message: `Дублирующийся id="${id}"`,
@@ -2065,7 +2097,7 @@ function findBrokenAriaIdReferences() {
   idRefAttributes.forEach(definition => {
     const elements = Array.from(document.querySelectorAll(`[${definition.name}]`));
 
-    elements.slice(0, 2000).forEach(element => {
+    limitCheckItems(elements, 2000, 'Связи ARIA: ' + definition.name).forEach(element => {
       const rawValue = element.getAttribute(definition.name) || '';
       const ids = rawValue.trim().split(/\s+/).filter(Boolean);
 
@@ -2107,7 +2139,7 @@ function findBrokenAriaIdReferences() {
 function findBrokenHtmlIdReferences() {
   const issues = [];
 
-  Array.from(document.querySelectorAll('label[for]')).slice(0, 2000).forEach(label => {
+  limitCheckItems(Array.from(document.querySelectorAll('label[for]')), 2000, 'Связи label').forEach(label => {
     const id = label.getAttribute('for') || '';
     if (!id || !document.getElementById(id)) {
       issues.push(createSyntaxIssue(label, {
@@ -2119,7 +2151,7 @@ function findBrokenHtmlIdReferences() {
     }
   });
 
-  Array.from(document.querySelectorAll('[list]')).slice(0, 1000).forEach(input => {
+  limitCheckItems(Array.from(document.querySelectorAll('[list]')), 1000, 'Связи datalist').forEach(input => {
     const id = input.getAttribute('list') || '';
     const target = id ? document.getElementById(id) : null;
     if (!target || target.tagName.toLowerCase() !== 'datalist') {
@@ -2132,7 +2164,7 @@ function findBrokenHtmlIdReferences() {
     }
   });
 
-  Array.from(document.querySelectorAll('td[headers], th[headers]')).slice(0, 2000).forEach(cell => {
+  limitCheckItems(Array.from(document.querySelectorAll('td[headers], th[headers]')), 2000, 'Связи заголовков таблиц').forEach(cell => {
     const rawValue = cell.getAttribute('headers') || '';
     rawValue.trim().split(/\s+/).filter(Boolean).forEach(id => {
       const target = document.getElementById(id);
@@ -2147,7 +2179,7 @@ function findBrokenHtmlIdReferences() {
     });
   });
 
-  Array.from(document.querySelectorAll('a[href^="#"], area[href^="#"]')).slice(0, 2000).forEach(link => {
+  limitCheckItems(Array.from(document.querySelectorAll('a[href^="#"], area[href^="#"]')), 2000, 'Якорные ссылки').forEach(link => {
     const href = link.getAttribute('href') || '';
     const targetId = decodeHashId(href);
     if (!targetId) return;
@@ -2178,6 +2210,11 @@ function decodeHashId(href) {
 }
 
 function createSyntaxIssue(element, options) {
+  const criteria = {
+    'broken-aria-id-reference': '4.1.2', 'single-id-reference-has-multiple-values': '4.1.2',
+    'empty-id-reference': '4.1.2', 'broken-label-for-reference': '1.3.1',
+    'broken-table-headers-reference': '1.3.1', 'broken-list-reference': '1.3.1', 'broken-fragment-reference': '2.4.4'
+  };
   return {
     type: options.type,
     category: 'syntax',
@@ -2185,7 +2222,7 @@ function createSyntaxIssue(element, options) {
     element: element.outerHTML,
     selector: getSelector(element),
     details: Object.assign({
-      criterion: '4.1.1',
+      criterion: criteria[options.issue] || '4.1.1',
       issue: options.issue
     }, options.details || {})
   };
@@ -2200,23 +2237,11 @@ function checkAriaCurrentForActiveItems() {
   const validValues = new Set(['page', 'step', 'location', 'date', 'time', 'true', 'false']);
 
   try {
-    Array.from(document.querySelectorAll('[aria-current]')).slice(0, 1000).forEach(element => {
+    limitCheckItems(Array.from(document.querySelectorAll('[aria-current]')), 1000, 'Элементы aria-current').forEach(element => {
       if (!isElementVisible(element)) return;
 
       const value = (element.getAttribute('aria-current') || '').trim().toLowerCase();
-      if (!value) {
-        addUniqueIssue(issues, seen, createAriaCurrentIssue(element, {
-          type: 'error',
-          message: 'aria-current не должен быть пустым',
-          issue: 'empty-aria-current',
-          details: {
-            attribute: 'aria-current',
-            currentValue: element.getAttribute('aria-current'),
-            expected: 'Укажите одно из значений: page, step, location, date, time, true или false'
-          }
-        }));
-        return;
-      }
+      if (!value || value === 'undefined') return;
 
       if (!validValues.has(value)) {
         addUniqueIssue(issues, seen, createAriaCurrentIssue(element, {
@@ -2227,14 +2252,13 @@ function checkAriaCurrentForActiveItems() {
             attribute: 'aria-current',
             currentValue: value,
             allowedValues: Array.from(validValues).join(', '),
-            expected: 'Для текущей страницы обычно используйте aria-current="page"'
+            expected: 'Неизвестный непустой токен означает true; для текущей страницы используйте более точное значение page'
           }
         }));
       }
     });
 
-    const currentCandidates = Array.from(document.querySelectorAll('a[href], [role="link"]'))
-      .slice(0, 2000)
+    const currentCandidates = limitCheckItems(Array.from(document.querySelectorAll('a[href], [role="link"]')), 2000, 'Кандидаты текущей страницы')
       .filter(element => isElementVisible(element) && isLikelyCurrentNavigationItem(element));
 
     currentCandidates.forEach(element => {
@@ -2261,7 +2285,7 @@ function checkAriaCurrentForActiveItems() {
         details: {
           activeHint: getActiveNavigationHint(element),
           href: element.getAttribute('href') || null,
-          expected: 'Добавьте aria-current="page" на ссылку текущей страницы или текущий пункт навигации'
+          expected: 'Проверьте назначение пункта; для текущей страницы добавьте aria-current="page"'
         }
       }));
     });
@@ -2300,24 +2324,27 @@ function isLikelyCurrentNavigationItem(element) {
 }
 
 function isNavigationLikeElement(element) {
+  const roles = (element.getAttribute('role') || '').trim().toLowerCase().split(/\s+/);
+  if (roles.some(role => ['tab', 'option', 'menuitem', 'treeitem'].includes(role))) return false;
   return element.matches('a[href], [role="link"]');
 }
 
 function hasOwnOrAncestorAriaCurrent(element) {
-  if (element.hasAttribute('aria-current')) return true;
-  const owner = element.closest('li[aria-current], [role="listitem"][aria-current], [role="menuitem"][aria-current]');
-  return Boolean(owner);
+  const owner = element.closest('[aria-current]');
+  if (!owner || (owner !== element && !owner.matches('li, [role="listitem"], [role="menuitem"]'))) return false;
+  const value = (owner.getAttribute('aria-current') || '').trim().toLowerCase();
+  return Boolean(value && value !== 'false' && value !== 'undefined');
 }
 
 function hasActiveStateToken(element) {
-  const tokenSource = [
-    element.getAttribute('class'),
-    element.getAttribute('data-state'),
-    element.getAttribute('data-status'),
-    element.getAttribute('data-active')
-  ].filter(Boolean).join(' ').toLowerCase();
-
-  return /(^|[\s_-])(active|current|selected|is-active|is-current|router-link-active|router-link-exact-active|current-menu-item|menu-item-active)([\s_-]|$)/i.test(tokenSource);
+  const activeClasses = new Set([
+    'active', 'current', 'selected', 'is-active', 'is-current',
+    'router-link-exact-active', 'current-menu-item', 'menu-item-active'
+  ]);
+  const classes = (element.getAttribute('class') || '').toLowerCase().split(/\s+/);
+  return classes.some(token => activeClasses.has(token)) ||
+    element.getAttribute('data-active') === 'true' ||
+    ['active', 'current'].includes(element.getAttribute('data-state'));
 }
 
 function getActiveNavigationHint(element) {
@@ -2335,7 +2362,7 @@ function isLinkToCurrentPage(element) {
   try {
     const target = new URL(href, window.location.href);
     const current = new URL(window.location.href);
-    target.hash = '';
+    if (target.hash) return target.href === current.href;
     current.hash = '';
     return target.href === current.href;
   } catch (error) {
@@ -2372,7 +2399,10 @@ function getTextElements() {
     console.error('Ошибка получения текстовых элементов:', error);
   }
 
-  return elements;
+  const selected = limitCheckItems(elements, 1500, 'Выборка видимого текста');
+  const textLimit = a11yScanLimits.get('Выборка видимого текста');
+  textLimit.totalIsLowerBound = Boolean(textLimit.totalIsLowerBound || elements.length > 1500);
+  return selected;
 }
 
 /**
@@ -2407,20 +2437,23 @@ function getContrastRatioForElement(element) {
   try {
     const style = window.getComputedStyle(element);
     const textColor = style.color;
-    const backgroundColor = getBackgroundColor(element);
+    const surface = getContrastSurface(element, textColor);
+    if (surface.incomplete) return surface;
+    const backgroundColor = surface.backgroundColor;
 
     if (!textColor || !backgroundColor) return null;
 
-    const contrastRatio = ColorUtils.calculateContrastRatio(textColor, backgroundColor);
+    const contrastRatio = ColorUtils.calculateContrastRatio(surface.textColor, backgroundColor);
     const fontSize = parseFloat(style.fontSize);
     const fontWeight = parseInt(style.fontWeight) || 400;
 
     const requiredAARatio = getRequiredContrastRatio(fontSize, fontWeight);
     const requiredAAARatio = requiredAARatio === 3 ? 4.5 : 7;
+    const asCss = color => `rgb(${color.r}, ${color.g}, ${color.b})`;
 
     // Get improvement suggestions
     const suggestions = ColorUtils.suggestContrastImprovements(
-      textColor,
+      surface.textColor,
       backgroundColor,
       requiredAARatio
     );
@@ -2433,13 +2466,13 @@ function getContrastRatioForElement(element) {
       requiredAAARatio,
       meetsAA: contrastRatio >= requiredAARatio,
       meetsAAA: contrastRatio >= requiredAAARatio,
-      textColor,
-      backgroundColor,
+      textColor: asCss(surface.textColor),
+      backgroundColor: asCss(backgroundColor),
       suggestions: suggestions
     };
   } catch (error) {
     console.error('Ошибка расчёта контраста:', error);
-    return null;
+    return { incomplete: true, reason: error.message };
   }
 }
 
@@ -2447,28 +2480,46 @@ function getContrastRatioForElement(element) {
  * Get background color for an element by traversing up the DOM tree
  * @param {Element} element - DOM element
  */
-function getBackgroundColor(element) {
-  let currentElement = element;
-  let backgroundColor = null;
-
-  // Traverse up the DOM tree to find opaque background
-  while (currentElement && currentElement !== document.documentElement) {
-    const style = window.getComputedStyle(currentElement);
-    const bgColor = style.backgroundColor;
-
-    if (bgColor && bgColor !== 'rgba(0, 0, 0, 0)' && bgColor !== 'transparent') {
-      const alpha = getAlphaFromColor(bgColor);
-      if (alpha > 0.1) { // Ignore nearly transparent backgrounds
-        backgroundColor = bgColor;
-        break;
-      }
+function getContrastSurface(element, textColor) {
+  const parse = value => {
+    const match = /^rgba?\(\s*([\d.]+),\s*([\d.]+),\s*([\d.]+)(?:,\s*([\d.]+))?\s*\)$/.exec(value);
+    return match ? { r: +match[1], g: +match[2], b: +match[3], a: match[4] === undefined ? 1 : +match[4] } : null;
+  };
+  const blend = (front, back) => ({
+    r: front.r * front.a + back.r * (1 - front.a),
+    g: front.g * front.a + back.g * (1 - front.a),
+    b: front.b * front.a + back.b * (1 - front.a), a: 1
+  });
+  const unknown = reason => ({ incomplete: true, reason });
+  const foreground = parse(textColor);
+  if (!foreground) return unknown('цвет текста не поддерживается точным расчётом');
+  const layers = [];
+  let opaque = false;
+  let current = element;
+  while (current) {
+    const style = getComputedStyle(current);
+    if (parseFloat(style.opacity) !== 1 || style.filter !== 'none' || style.mixBlendMode !== 'normal' ||
+      (style.backdropFilter && style.backdropFilter !== 'none')) return unknown('прозрачность слоя, фильтр или смешивание цветов');
+    if (current === element && style.textShadow !== 'none') return unknown('тень текста требует проверки отрисовки');
+    if (!opaque) {
+      if (style.backgroundImage !== 'none') return unknown('фон содержит изображение или градиент');
+      const color = parse(style.backgroundColor);
+      if (!color) return unknown('цвет фона не поддерживается точным расчётом');
+      layers.push(color);
+      if (color.a === 1) opaque = true;
     }
-
-    currentElement = currentElement.parentElement;
+    current = current.parentElement || current.getRootNode().host || null;
   }
+  let background = { r: 255, g: 255, b: 255, a: 1 };
+  for (let index = layers.length - 1; index >= 0; index--) background = blend(layers[index], background);
+  const colorString = color => `rgb(${color.r}, ${color.g}, ${color.b})`;
+  // Keep fractional components until the contrast calculation to avoid threshold errors.
+  return { backgroundColor: background, textColor: blend(foreground, background), description: colorString(background) };
+}
 
-  // Fallback to white if no background found
-  return backgroundColor || 'rgb(255, 255, 255)';
+function getBackgroundColor(element) {
+  const surface = getContrastSurface(element, getComputedStyle(element).color);
+  return surface.incomplete ? null : surface.description;
 }
 
 function resolveCssColor(color, element) {
@@ -2476,10 +2527,11 @@ function resolveCssColor(color, element) {
   if (color === 'currentColor') {
     return window.getComputedStyle(element).color;
   }
-  if (color.startsWith('rgb') || color.startsWith('#')) {
-    return color;
-  }
-  return null;
+  if (color.startsWith('#')) color = ColorUtils.rgbToString(ColorUtils.parseHexColor(color));
+  const surface = getContrastSurface(element, color);
+  if (surface.incomplete) return null;
+  const text = surface.textColor;
+  return `rgb(${text.r}, ${text.g}, ${text.b})`;
 }
 
 function isTransparentColor(color) {
@@ -2527,25 +2579,6 @@ function checkAriaAttributes() {
   const issues = [];
 
   try {
-    // Check aria-label without visible text
-    const ariaLabeled = document.querySelectorAll('[aria-label]');
-    ariaLabeled.forEach(el => {
-      if (!isElementVisible(el)) return;
-
-      const hasText = el.textContent && el.textContent.trim();
-      const hasAltImage = el.querySelector('img[alt]');
-
-      if (!hasText && !hasAltImage) {
-        issues.push({
-          type: 'warning',
-          category: 'aria',
-          message: 'Элемент с aria-label не содержит видимого текста',
-          element: el.outerHTML,
-          selector: getSelector(el)
-        });
-      }
-    });
-
     // Check ARIA roles validity
     const elementsWithRole = document.querySelectorAll('[role]');
     elementsWithRole.forEach(el => {
@@ -2573,13 +2606,24 @@ function checkAriaAttributes() {
  * @param {string} role - ARIA role to validate
  */
 function isValidAriaRole(role) {
+  const tokens = role.trim().toLowerCase().split(/\s+/);
+  if (typeof axe !== 'undefined' && axe.commons) {
+    return tokens.some(token => axe.commons.aria.isValidRole(token));
+  }
   const validRoles = [
     'button', 'checkbox', 'dialog', 'gridcell', 'link', 'listbox',
     'option', 'progressbar', 'radio', 'slider', 'tab', 'tabpanel',
     'textbox', 'menu', 'menubar', 'menuitem', 'navigation', 'banner',
-    'main', 'complementary', 'contentinfo', 'search', 'form'
+    'main', 'complementary', 'contentinfo', 'search', 'form',
+    'alert', 'alertdialog', 'application', 'article', 'cell', 'columnheader',
+    'combobox', 'definition', 'directory', 'document', 'feed', 'figure',
+    'group', 'heading', 'img', 'list', 'listitem', 'log', 'marquee',
+    'math', 'menuitemcheckbox', 'menuitemradio', 'meter', 'none', 'note',
+    'presentation', 'radiogroup', 'region', 'row', 'rowgroup', 'rowheader',
+    'scrollbar', 'separator', 'spinbutton', 'status', 'switch', 'table',
+    'tablist', 'term', 'timer', 'toolbar', 'tooltip', 'tree', 'treegrid', 'treeitem'
   ];
-  return validRoles.includes(role);
+  return tokens.some(token => validRoles.includes(token));
 }
 
 /**
@@ -2714,7 +2758,7 @@ function checkLanguageOfParts() {
 
     const candidates = getLanguagePartCandidates();
 
-    candidates.slice(0, 1500).forEach(element => {
+    limitCheckItems(candidates, 1500, 'Кандидаты языка фрагментов').forEach(element => {
       if (!isElementVisible(element) || hasOwnOrInheritedDifferentLang(element, pageLang)) return;
 
       const text = getOwnVisibleText(element);
@@ -2793,11 +2837,14 @@ function getOwnVisibleText(element) {
     }
   });
 
-  while (walker.nextNode() && textNodes.length < 12) {
+  while (textNodes.length <= 12 && walker.nextNode()) {
     textNodes.push(walker.currentNode.textContent || '');
   }
 
-  return textNodes.join(' ').replace(/\s+/g, ' ').trim();
+  const selected = limitCheckItems(textNodes, 12, 'Текстовые узлы языкового образца');
+  const sampleLimit = a11yScanLimits.get('Текстовые узлы языкового образца');
+  sampleLimit.totalIsLowerBound = Boolean(sampleLimit.totalIsLowerBound || textNodes.length > 12);
+  return selected.join(' ').replace(/\s+/g, ' ').trim();
 }
 
 function isUsefulLanguageSample(text) {

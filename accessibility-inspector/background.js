@@ -3,10 +3,14 @@
  * Handles accessibility checks and communication between popup and content scripts
  */
 
+importScripts('utils/scenario-runner.js', 'utils/audit-results.js', 'utils/workflow-runner.js');
+
 // Listen for messages from popup or content scripts
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'checkAccessibility') {
-    handleAccessibilityCheck(request.url, request.format)
+    handleAccessibilityCheck(request.url, request.format, {
+      scenarios: request.scenarios === true, profile: request.profile, level: request.level, workflow: request.workflow
+    })
       .then(sendResponse)
       .catch(error => sendResponse({ error: error.message }));
     return true; // Indicates async response
@@ -18,7 +22,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
  * @param {string} url - URL to check
  * @param {string} format - Report format (json, html, text)
  */
-async function handleAccessibilityCheck(url, format) {
+async function handleAccessibilityCheck(url, format, options = {}) {
+  if (options.workflow) A11yWorkflowRunner.validate(options.workflow, url);
   // Check if scripting API is available
   if (!chrome.scripting) {
     throw new Error('API scripting недоступен. Проверьте разрешения в manifest.json.');
@@ -41,18 +46,35 @@ async function handleAccessibilityCheck(url, format) {
 
     console.log('Страница загружена, внедряются сценарии...');
 
-    // Inject all necessary content scripts
-    await chrome.scripting.executeScript({
+    const existingScripts = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
-      files: [
-        'utils/color-utils.js',
-        'utils/a11y-rules.js',
-        'utils/doka-links.js',
-        'utils/report-generator.js',
-        'utils/language-detector.js',
-        'content-script.js'
-      ]
+      func: () => typeof runA11yChecks === 'function' &&
+        typeof A11yStandardsChecks !== 'undefined' && typeof axe !== 'undefined' &&
+        typeof A11yAxeLocale !== 'undefined' && typeof A11yScenarioChecks !== 'undefined' &&
+        typeof A11yInteractionChecks !== 'undefined' && typeof A11yAuditResults !== 'undefined' && Boolean(window.a11yInspectorReady)
     });
+
+    // Manifest content scripts may already be loaded in this tab.
+    if (!existingScripts[0]?.result) {
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        files: [
+          'vendor/axe.min.js',
+          'vendor/axe-locale-ru.js',
+          'utils/audit-results.js',
+          'utils/standards-checks.js',
+          'utils/scenario-checks.js',
+          'utils/interaction-checks.js',
+          'utils/color-utils.js',
+          'utils/a11y-rules.js',
+          'utils/doka-links.js',
+          'utils/report-coverage.js',
+          'utils/report-generator.js',
+          'utils/language-detector.js',
+          'content-script.js'
+        ]
+      });
+    }
 
     console.log('Сценарии внедрены, ожидание инициализации...');
 
@@ -64,7 +86,8 @@ async function handleAccessibilityCheck(url, format) {
     // Execute accessibility checks and get raw data
     const results = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
-      function: performAccessibilityCheck
+      func: performAccessibilityCheck,
+      args: [options]
     });
 
     if (!results || !results[0] || !results[0].result) {
@@ -82,12 +105,30 @@ async function handleAccessibilityCheck(url, format) {
       throw new Error('Проверка доступности вернула данные в недопустимом формате');
     }
 
+    if (options.scenarios) {
+      const scenarioResult = await A11yScenarioRunner.run(tab.id);
+      checkResult.issues.push(...scenarioResult.issues);
+      checkResult.coverage = { ...checkResult.coverage, scenarios: scenarioResult.coverage };
+      checkResult.summary = {
+        total: checkResult.issues.length,
+        errors: checkResult.issues.filter(issue => issue.type === 'error').length,
+        warnings: checkResult.issues.filter(issue => issue.type === 'warning').length
+      };
+    }
+
+    if (options.workflow) {
+      const workflowResult = await A11yWorkflowRunner.run(tab.id, options.workflow, url);
+      checkResult.issues.push(...workflowResult.issues);
+      checkResult.coverage = { ...checkResult.coverage, workflow: workflowResult.coverage };
+    }
+    Object.assign(checkResult, A11yAuditResults.normalize(checkResult, options));
+
     console.log('Проверка доступности завершена, формируется отчёт...');
 
     // Generate the report using ReportGenerator from content script
     const reportResults = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
-      function: generateReportInContentScript,
+      func: generateReportInContentScript,
       args: [checkResult, format]
     });
 
@@ -97,16 +138,8 @@ async function handleAccessibilityCheck(url, format) {
 
     const report = reportResults[0].result;
     
-    // Validate report is not HTML error page
-    if (
-        format !== 'html' &&
-        typeof report === 'string' &&
-        (
-            report.trim().startsWith('<!DOCTYPE') ||
-            report.includes('<html') ||
-            report.includes('</html>')
-        )
-    ) {
+    // Element snapshots may contain HTML inside an otherwise valid report.
+    if (format !== 'html' && typeof report === 'string' && /^\s*(?:<!doctype\s+html|<html(?:\s|>))/i.test(report)) {
         throw new Error('Вместо отчёта о доступности получен HTML. Возможно, URL недоступен.');
     }
 
@@ -180,7 +213,7 @@ function waitForContentScript(tabId) {
       try {
         const results = await chrome.scripting.executeScript({
           target: { tabId: tabId },
-          function: () => {
+          func: () => {
             return {
               hasRunA11yChecks: typeof runA11yChecks === 'function',
               hasColorUtils: typeof ColorUtils !== 'undefined',
@@ -226,10 +259,10 @@ function waitForContentScript(tabId) {
 /**
  * Function injected into the page to run accessibility checks
  */
-function performAccessibilityCheck() {
+async function performAccessibilityCheck(options = {}) {
   try {
     if (typeof runA11yChecks === 'function') {
-      return runA11yChecks();
+      return await runA11yChecks(options);
     } else {
       throw new Error('Функция runA11yChecks не найдена');
     }

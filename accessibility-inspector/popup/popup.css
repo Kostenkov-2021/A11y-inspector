@@ -106,6 +106,20 @@ select{
   margin:12px 0;
 }
 
+.scenario-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.scenario-option input {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  margin: 0;
+  padding: 0;
+}
+
 .primary-btn{
   flex:1;
   padding:12px 14px;
@@ -125,6 +139,15 @@ select{
   justify-content:center;
   gap:8px;
 }
+
+#workflow-input {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  font: 12px monospace;
+}
+
+details { margin: 12px 0; }
 .primary-btn:hover:not(:disabled){
   transform: translateY(-2px);
   box-shadow:

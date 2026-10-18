@@ -40,7 +40,32 @@
         </div>
       </div>
       
+      <label class="scenario-option" for="scenario-checks">
+        <input type="checkbox" id="scenario-checks">
+        Сценарная проверка фокуса и адаптации
+      </label>
+
+      <div class="input-group">
+        <label for="profile-select">Профиль:</label>
+        <select id="profile-select">
+          <option value="combined">WCAG 2.2 и ГОСТ Р 52872-2019</option>
+          <option value="wcag22">WCAG 2.2</option>
+          <option value="gost2019">ГОСТ Р 52872-2019</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label for="level-select">Уровень проверок:</label>
+        <select id="level-select"><option value="AA">A и AA</option><option value="AAA">A, AA и доступные проверки AAA</option></select>
+      </div>
+      <details>
+        <summary>Пользовательский сценарий</summary>
+        <label for="workflow-input">Сценарий JSON:</label>
+        <textarea id="workflow-input" rows="5" spellcheck="false"></textarea>
+        <label class="scenario-option"><input type="checkbox" id="workflow-consent">Разрешить действия указанного сценария</label>
+      </details>
+
       <div class="button-group">
+
         <button id="check-btn" class="primary-btn" aria-live="polite">
           <span class="button-text">Проверить доступность</span>
           <span class="loading-spinner hidden" aria-hidden="true"></span>
@@ -80,6 +105,7 @@
   </div>
   
   <script src="../utils/doka-links.js"></script>
+  <script src="../utils/report-coverage.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

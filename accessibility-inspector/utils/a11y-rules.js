@@ -136,7 +136,7 @@ const A11yRules = {
     missingH1: {
       check: () => document.querySelectorAll('h1').length === 0,
       message: 'Отсутствует заголовок H1',
-      type: 'error',
+      type: 'warning',
       category: 'headings'
     },
     headingOrder: {
@@ -280,30 +280,33 @@ const A11yRuleUtils = {
   /**
    * Run all accessibility checks
    */
-  runAllChecks: function() {
+  runAllChecks: function(options = {}) {
     const issues = [];
     
     try {
       // Image checks
-      const images = document.querySelectorAll('img');
-      issues.push(...this.applyRuleToElements(A11yRules.images.missingAlt, images));
-      issues.push(...this.applyRuleToElements(A11yRules.images.emptyAlt, images));
-      issues.push(...this.applyRuleToElements(A11yRules.images.longAlt, images));
+      if (!options.standardsEngine) {
+        const images = document.querySelectorAll('img');
+        issues.push(...this.applyRuleToElements(A11yRules.images.missingAlt, images));
+      }
       
       // Form checks
-      const formInputs = document.querySelectorAll('input, select, textarea');
-      issues.push(...this.applyRuleToElements(A11yRules.forms.missingLabel, formInputs));
-      
-      const forms = document.querySelectorAll('form');
-      issues.push(...this.applyRuleToElements(A11yRules.forms.missingFormLabel, forms));
+      if (!options.standardsEngine) {
+        const formInputs = document.querySelectorAll('input, select, textarea');
+        issues.push(...this.applyRuleToElements(A11yRules.forms.missingLabel, formInputs));
+      }
       
       // Navigation checks (global rules)
-      issues.push(...this.applyGlobalRule(A11yRules.navigation.missingSkipLinks));
+      if (!document.querySelector('main, [role="main"], h1, h2')) {
+        issues.push(...this.applyGlobalRule(A11yRules.navigation.missingSkipLinks));
+      }
       issues.push(...this.applyGlobalRule(A11yRules.navigation.missingLandmarks));
       
       // Link checks
       const links = document.querySelectorAll('a[href]');
-      issues.push(...this.applyRuleToElements(A11yRules.links.emptyLink, links));
+      if (!options.standardsEngine) {
+        issues.push(...this.applyRuleToElements(A11yRules.links.emptyLink, links));
+      }
       issues.push(...this.applyRuleToElements(A11yRules.links.genericLinkText, links));
       
       // Heading checks (global rules)
@@ -311,13 +314,10 @@ const A11yRuleUtils = {
       issues.push(...this.applyGlobalRule(A11yRules.headings.headingOrder));
       
       // Interactive element checks
-      const buttons = document.querySelectorAll('button, [role="button"]');
-      issues.push(...this.applyRuleToElements(A11yRules.interactive.buttonWithoutLabel, buttons));
-      
-      const focusableElements = document.querySelectorAll(
-        'button, [role="button"], a[href], input, select, textarea, [tabindex]'
-      );
-      issues.push(...this.applyRuleToElements(A11yRules.interactive.focusableWithoutIndicator, focusableElements));
+      if (!options.standardsEngine) {
+        const buttons = document.querySelectorAll('button, [role="button"]');
+        issues.push(...this.applyRuleToElements(A11yRules.interactive.buttonWithoutLabel, buttons));
+      }
       
     } catch (error) {
       console.error('Error running accessibility checks:', error);

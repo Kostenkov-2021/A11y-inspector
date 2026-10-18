@@ -1,5 +1,6 @@
 {
   "manifest_version": 3,
+  "minimum_chrome_version": "118",
   "name": "Инспектор доступности",
   "version": "1.1",
   "description": "Расширение для проверки доступности сайтов",
@@ -7,7 +8,7 @@
     "activeTab",
     "storage",
     "scripting",
-    "storage"
+    "debugger"
   ],
   "host_permissions": [
     "http://*/*",
@@ -24,9 +25,16 @@
     {
       "matches": ["<all_urls>"],
       "js": [
+        "vendor/axe.min.js",
+        "vendor/axe-locale-ru.js",
+        "utils/audit-results.js",
+        "utils/standards-checks.js",
+        "utils/scenario-checks.js",
+        "utils/interaction-checks.js",
         "utils/color-utils.js",
         "utils/a11y-rules.js",
         "utils/doka-links.js",
+        "utils/report-coverage.js",
         "utils/report-generator.js",
         "utils/language-detector.js",
         "content-script.js"

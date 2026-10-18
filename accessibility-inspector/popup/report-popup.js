@@ -273,11 +273,12 @@ function generateIssue(position, issue){
     }
     
 
-    if (cnt_category == "contrast"){
+    if (cnt_category == "contrast" && issue.details?.suggestions){
         let hrAfterCode = document.createElement("hr");
         hrAfterCode.style = "width: -webkit-fill-available;";
         details_contained.appendChild(hrAfterCode);
         details_contained.appendChild(createPairConstructElement("Параметры контраста"));
+        if (issue.details['Результат']) details_contained.appendChild(createPairConstructElement("Результат", issue.details['Результат']));
 
         let contrastParametersContainer = document.createElement("div");
         contrastParametersContainer.style = "margin-left: .7rem;"
@@ -395,6 +396,11 @@ function init(reportData){
     summaryTotalIssues.innerText = reportData.summary.total;
     summaryWarnings.innerText = reportData.summary.warnings;
     summaryErrors.innerText = reportData.summary.errors;
+      if (reportData.coverage) {
+        const coverage = document.createElement("p");
+        coverage.innerText = A11yReportCoverage.describe(reportData.coverage);
+        summaryTotalIssues.closest("header").appendChild(coverage);
+    }
     showDetailsIssues(reportData.issues);
 
     const issuesElements = document.getElementsByClassName("issues__list__details");
@@ -470,6 +476,10 @@ function translateCategory(category) {
         "page-title": "заголовок страницы",
         "non-text-contrast": "контраст нетекстовой информации",
         "text-spacing": "интервалы текста",
+        reflow: "адаптация контента",
+        "text-resize": "увеличение текста",
+        "focus-visibility": "видимость фокуса",
+        "interaction": "интерактивные сценарии",
         "hover-focus-content": "контент при наведении и фокусе",
         "focus-order": "порядок фокуса",
         "keyboard-traps": "клавиатурные ловушки",

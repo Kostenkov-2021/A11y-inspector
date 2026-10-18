@@ -134,7 +134,13 @@ test('edge auto-scroll reaches a distant target inside a nested scrolling contai
       document.querySelector('#drop').onpointerup = event => { if (event.isTrusted && window.dragging) event.currentTarget.textContent = 'Done'; };
     });
     const result = await runWorkflow(page, [{ action: 'drag', selector: '#source', target: '#drop', autoScroll: true, timeoutMs: 4000, expect: { selector: '#drop', text: 'Done' } }]);
-    assert.equal(result.coverage.status, 'completed', JSON.stringify(result.issues));
+    assert.equal(result.coverage.status, 'completed', JSON.stringify({ issues: result.issues, drag: result.coverage.dragObservations,
+      geometry: await page.evaluate(() => {
+        const scroller = document.querySelector('#scroller'), drop = document.querySelector('#drop'), box = drop.getBoundingClientRect();
+        return { viewport: [innerWidth, innerHeight], scroll: [scroller.scrollLeft, scroller.scrollTop],
+          container: scroller.getBoundingClientRect().toJSON(), target: box.toJSON(),
+          hit: document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2)?.outerHTML };
+      }) }));
     assert.ok(result.coverage.dragObservations[0].completed);
     assert.ok(result.coverage.dragObservations[0].ticks > 0);
     assert.ok(await page.locator('#scroller').evaluate(element => element.scrollTop > 1000));
@@ -150,6 +156,39 @@ test('edge auto-scroll reaches a distant target inside a nested scrolling contai
     });
     const shadow = await runWorkflow(page, [{ action: 'drag', selector: '#host >>> #source', target: '#host >>> #drop', autoScroll: true, timeoutMs: 4000, expect: { selector: '#host >>> #drop', text: 'Done' } }]);
     assert.equal(shadow.coverage.status, 'completed', JSON.stringify(shadow.issues));
+  });
+});
+
+test('edge scrolling waits for a transient obstruction but never completes through a persistent overlay', async () => {
+  for (const transient of [true, false]) await withPage('<div id="scroller" style="height:180px;width:300px;overflow:auto"><div id="source" style="height:40px;user-select:none">Source</div><div style="height:1300px"></div><div id="drop" style="height:70px">Pending</div></div><button id="next">Next</button>', async page => {
+    await page.evaluate(() => {
+      window.clicks = 0;
+      document.querySelector('#next').onclick = () => window.clicks++;
+      document.querySelector('#source').onpointerdown = event => event.preventDefault();
+      document.querySelector('#drop').onpointerup = event => { if (event.isTrusted) event.currentTarget.textContent = 'Done'; };
+    });
+    let obstructed = false;
+    const result = await runWorkflow(page, [
+      { action: 'drag', selector: '#source', target: '#drop', autoScroll: true, timeoutMs: transient ? 4000 : 250, expect: { selector: '#drop', text: 'Done' } },
+      { action: 'click', selector: '#next' }
+    ], async (method, params) => {
+      if (method !== 'Input.dispatchMouseEvent' || params.type !== 'mousePressed' || obstructed) return;
+      obstructed = true;
+      await page.evaluate(transient => {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:1000';
+        document.body.append(overlay);
+        if (transient) setTimeout(() => overlay.remove(), 150);
+      }, transient);
+    });
+    assert.equal(result.coverage.status, transient ? 'completed' : 'incomplete', JSON.stringify(result.issues));
+    assert.equal(result.coverage.dragObservations[0].completed, transient);
+    assert.equal(await page.evaluate(() => window.clicks), transient ? 1 : 0);
+    if (!transient) {
+      assert.equal(await page.locator('#drop').textContent(), 'Pending');
+      assert.ok(result.coverage.dragObservations[0].timedOut);
+      assert.equal(result.coverage.debugger.detached, true);
+    }
   });
 });
 
@@ -238,6 +277,45 @@ test('edge scrolling lets an application scroll itself without a reserve jump', 
     const result = await runWorkflow(page, [{ action: 'drag', selector: '#source', target: '#drop', autoScroll: true, timeoutMs: 4000, expect: { selector: '#drop', text: 'Done' } }]);
     assert.equal(result.coverage.status, 'completed', JSON.stringify(result.issues));
     assert.equal(result.coverage.dragObservations[0].assistedScrolls, 0);
+  });
+});
+
+test('edge scrolling refreshes state after application scrolling before sending a reserve wheel', async () => {
+  await withPage('<div id="scroller" style="height:180px;overflow:auto"><div id="source" style="height:40px;user-select:none">Source</div><div style="height:1000px"></div><div id="drop" style="height:60px">Pending</div></div>', async page => {
+    await page.evaluate(() => {
+      let moves = 0;
+      const scroller = document.querySelector('#scroller');
+      document.querySelector('#source').onpointerdown = event => event.preventDefault();
+      document.addEventListener('pointermove', event => {
+        if (event.buttons === 1 && event.clientY > scroller.getBoundingClientRect().bottom - 10 && ++moves === 2) scroller.scrollTop = scroller.scrollHeight;
+      });
+      document.querySelector('#drop').onpointerup = event => { if (event.isTrusted) event.currentTarget.textContent = 'Done'; };
+    });
+    const result = await runWorkflow(page, [{ action: 'drag', selector: '#source', target: '#drop', autoScroll: true, timeoutMs: 4000, expect: { selector: '#drop', text: 'Done' } }]);
+    assert.equal(result.coverage.status, 'completed', JSON.stringify(result.issues));
+    assert.ok(!result.commands.some(command => command.params?.type === 'mouseWheel'));
+    assert.equal(result.coverage.dragObservations[0].assistedScrolls, 0);
+  });
+});
+
+test('edge waiting does not hide a same-selector target replacement', async () => {
+  await withPage('<div style="height:180px;overflow:auto"><div id="source" style="height:40px;user-select:none">Source</div><div style="height:1000px"></div><div id="drop" style="height:60px">Pending</div></div>', async page => {
+    await page.evaluate(() => document.querySelector('#source').onpointerdown = event => {
+      event.preventDefault();
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;inset:0;z-index:1000';
+      document.body.append(overlay);
+      setTimeout(() => {
+        const drop = document.querySelector('#drop');
+        drop.replaceWith(drop.cloneNode(true));
+      }, 100);
+    });
+    const result = await runWorkflow(page, [{ action: 'drag', selector: '#source', target: '#drop', autoScroll: true, timeoutMs: 2000 }]);
+    assert.equal(result.coverage.status, 'incomplete');
+    assert.equal(result.coverage.steps.length, 0);
+    assert.ok(result.issues.some(issue => /исчезла или была заменена/.test(issue.details['Причина'] || '')));
+    assert.ok(!result.commands.some(command => command.params?.type === 'mouseReleased'));
+    assert.equal(result.coverage.debugger.detached, true);
   });
 });
 

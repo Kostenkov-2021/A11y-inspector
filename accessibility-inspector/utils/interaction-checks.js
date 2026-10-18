@@ -488,7 +488,7 @@
     return hitPoint(uniqueElement(selector));
   }
 
-  function dragEdgeState(selector) {
+  function dragEdgeState(selector, allowPending = false) {
     assertAction();
     const destination = uniqueElement(selector);
     if (destination.ownerDocument !== document) throw new Error('Краевая прокрутка во фрейме не поддерживается');
@@ -520,16 +520,19 @@
       action.scrollNode = node;
       return { done: false, point, dx, dy, position, container, scrollLeft: node.scrollLeft, scrollTop: node.scrollTop };
     }
-    throw new Error('Не найден доступный край прокрутки; цель перекрыта или область непрокручиваема');
+    const reason = 'Не найден доступный край прокрутки; цель перекрыта или область непрокручиваема';
+    if (allowPending) return { done: false, waiting: true, reason };
+    throw new Error(reason);
   }
 
-  function advanceDragEdge(selector, container) {
-    const state = dragEdgeState(selector);
-    if (state.done || state.container !== container) return { advanced: false };
+  function advanceDragEdge(selector, container, assist = true) {
+    const state = dragEdgeState(selector, true);
+    if (state.done || state.waiting || state.container !== container) return { advanced: false, changed: true };
+    if (!assist) return { advanced: false, state };
     const node = action.scrollNode;
     const left = node.scrollLeft, top = node.scrollTop;
     node.scrollBy({ left: state.dx, top: state.dy, behavior: 'instant' });
-    return { advanced: node.scrollLeft !== left || node.scrollTop !== top };
+    return { advanced: node.scrollLeft !== left || node.scrollTop !== top, state };
   }
 
   function dragDropPoint(selector, expected) {

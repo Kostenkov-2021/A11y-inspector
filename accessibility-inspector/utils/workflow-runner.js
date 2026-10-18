@@ -400,25 +400,34 @@
       const observation = { step: index + 1, ticks: 0, assistedScrolls: 0, completed: false, durationMs: 0 };
       coverage.dragObservations.push(observation);
       const at = Date.now(), budget = remaining(step), deadline = at + budget;
-      let previous, wheelPosition;
+      let previous, wheelPosition, pendingReason;
       try {
         for (let tick = 0; tick < 100 && Date.now() <= deadline; tick++) {
-          const state = await transport.inspect('dragEdgeState', [step.target]);
+          const state = await transport.inspect('dragEdgeState', [step.target, true]);
           if (state.done) { observation.completed = true; return state.point; }
           observation.ticks++;
+          // A wheel or application update can temporarily invalidate edge hit testing.
+          if (state.waiting) {
+            pendingReason = state.reason;
+            previous = wheelPosition = null;
+            await new Promise(resolve => setTimeout(resolve, Math.min(40, Math.max(0, deadline - Date.now()))));
+            continue;
+          }
+          pendingReason = null;
           if (data) await sendInput('Input.dispatchDragEvent', { type: 'dragOver', ...state.point, data });
           else await sendInput('Input.dispatchMouseEvent', { type: 'mouseMoved', ...state.point, button: 'left', buttons: 1 });
           // Allow application scrolling; native interception may need a bounded scrollBy fallback.
           const slow = previous && previous.container === state.container && Math.abs(previous.scrollLeft - state.scrollLeft) + Math.abs(previous.scrollTop - state.scrollTop) < 120;
           if (slow) {
-            if ((data || wheelPosition === state.position) && (await transport.inspect('advanceDragEdge', [step.target, state.container])).advanced) observation.assistedScrolls++;
-            else await sendInput('Input.dispatchMouseEvent', { type: 'mouseWheel', ...state.point, deltaX: state.dx, deltaY: state.dy, buttons: 1 });
+            const advance = await transport.inspect('advanceDragEdge', [step.target, state.container, Boolean(data || wheelPosition === state.position)]);
+            if (advance.advanced) observation.assistedScrolls++;
+            else if (!advance.changed) await sendInput('Input.dispatchMouseEvent', { type: 'mouseWheel', ...advance.state.point, deltaX: advance.state.dx, deltaY: advance.state.dy, buttons: 1 });
             wheelPosition = state.position;
           } else wheelPosition = null;
           previous = state;
           await new Promise(resolve => setTimeout(resolve, Math.min(40, Math.max(0, deadline - Date.now()))));
         }
-        throw new Error('Достигнут лимит краевой автопрокрутки');
+        throw new Error('Достигнут лимит краевой автопрокрутки' + (pendingReason ? ': ' + pendingReason : ''));
       } finally {
         observation.durationMs = Date.now() - at;
         observation.timedOut = !observation.completed && Date.now() >= deadline;

@@ -1,6 +1,6 @@
 # Сторонние библиотеки
 
-axe-core 4.11.0 используется для локальных стандартных проверок доступности. Исходный пакет: [axe-core](https://www.npmjs.com/package/axe-core/v/4.11.0), исходный код: [Deque Systems](https://github.com/dequelabs/axe-core/tree/v4.11.0).
+axe-core 4.14.0 используется для локальных стандартных проверок доступности. Исходный пакет: [axe-core](https://www.npmjs.com/package/axe-core/v/4.14.0), исходный код: [Deque Systems](https://github.com/dequelabs/axe-core/tree/v4.14.0).
 
 Файлы `axe.min.js` и `axe-locale-ru.js` подготовлены из пакета командой `pnpm run vendor`. Русская локализация взята из `locales/ru.json` без изменения текстов. Лицензия Mozilla Public License 2.0 сохранена в файле `axe-LICENSE`.
 

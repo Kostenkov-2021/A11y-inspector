@@ -3,6 +3,7 @@ const http = require('node:http');
 const path = require('node:path');
 const { test } = require('node:test');
 const { chromium } = require('playwright');
+const { version: axeVersion } = require('axe-core/package.json');
 
 const fixture = `<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>Проверка расширения</title>
 <style>body{font:16px sans-serif}button:focus{outline:3px solid black}#tip{display:none;position:fixed;left:160px;top:30px;background:white;border:1px solid black;padding:10px}#drag,#drop{width:80px;height:50px;background:green;margin:20px;touch-action:none}#drop{margin-left:200px}#gradient{background:linear-gradient(white,black);color:gray}</style></head><body>
@@ -97,7 +98,7 @@ test('installed extension runs real debugger scenarios and an explicit local wor
       return JSON.parse(response.report);
     };
     const report = await request({ url: origin, profile: 'wcag22', scenarios: true });
-    assert.equal(report.coverage.engine, 'axe-core 4.11.0');
+    assert.equal(report.coverage.engine, `axe-core ${axeVersion}`);
     assert.equal(report.coverage.rules.length, 41);
     assert.ok(!report.issues.some(issue => issue.message.startsWith('Стандартные проверки не выполнены')));
     assert.ok(report.coverage.scenarios.completedPhases.includes('tooltips'));
